@@ -6769,7 +6769,9 @@ document.getElementById("btnExecuterRechercheFHIR").addEventListener("click", as
     const response = await fetch(urlAPI, {
       headers: {
         "Accept": "application/fhir+json"
-        // "Authorization": "Bearer VOTRE_CLE_API" // Décommentez si besoin d'utiliser votre clé
+         headers: {
+    "ESANTE-API-KEY": "35ef8ac4-6e60-40cb-af8a-c46e6090cbf4"
+  }
       }
     });
 
