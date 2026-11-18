@@ -6862,16 +6862,38 @@ document.getElementById("btnExecuterRechercheFHIR")
         name: queryVal
       });
 
-   const response = await fetch(
-    `${URL_RECHERCHE_PRO}?name=${encodeURIComponent(queryVal)}`,
-    {
-        method: "GET",
-        headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${idToken}`
+  const user = window.auth?.currentUser;
+
+if (!user) {
+    afficherBulle("Vous devez être connecté pour effectuer cette recherche.", "warning");
+    return;
+}
+
+try {
+    const idToken = await user.getIdToken();
+
+    const response = await fetch(
+        `${URL_RECHERCHE_PRO}?name=${encodeURIComponent(queryVal)}`,
+        {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${idToken}`
+            }
         }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Erreur serveur : ${response.status}`);
     }
-);
+
+    const data = await response.json();
+
+    // Continuer ici avec le traitement des résultats FHIR
+} catch (error) {
+    console.error("Erreur recherche praticien :", error);
+    afficherBulle("La recherche n'a pas pu aboutir : " + error.message, "error");
+}
 
       // Lecture de la réponse
       const data = await response.json().catch(() => null);
