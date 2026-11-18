@@ -2528,7 +2528,7 @@ document.getElementById("vigilances").addEventListener("change", async () => {
 document.getElementById("medtraitant").addEventListener("change", async () => {
   const value = document.getElementById("medtraitant").value.trim() || "";
   await updateDoc(patientRef, { medtraitant: value });
-  afficherBulle("💾 Medecin(s) traitant(s) enregistré(s)", "success");
+  //afficherBulle("💾 Medecin(s) traitant(s) enregistré(s)", "success");
   ajouterEntreeHistorique(`Modification du médecin traitant : ${value || "—"}`, { silencieux: true });
 });
 
