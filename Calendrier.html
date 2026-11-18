@@ -41,19 +41,21 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 .gut span{position:absolute;right:8px;font-size:12px;color:var(--muted);transform:translateY(-50%)}
 .col{position:relative;border-left:1px solid var(--line-soft);background-image:linear-gradient(var(--line-soft) 1px,transparent 1px)}
 .col.today{background-color:#f8fbfe}
-.ev{position:absolute;display:block;overflow:hidden;padding:2px 6px;text-align:left;font-size:12px;line-height:1.3;color:var(--ink);white-space:nowrap;text-overflow:ellipsis;background:var(--bg);border:0;border-left:5px solid var(--c);border-radius:6px;cursor:pointer}
+.ev{position:absolute;display:block;overflow:hidden;padding:2px 6px;text-align:left;font-size:12px;line-height:1.3;color:var(--ink);white-space:nowrap;text-overflow:ellipsis;background:var(--bg);border:0;border-left:5px solid var(--c);border-radius:6px;cursor:pointer;z-index:2}
 .ev:hover{filter:brightness(.96)}.ev b{color:var(--c)}.ev small{color:var(--muted)}
 .ev.s-attente{box-shadow:0 0 0 2px var(--c) inset;font-weight:600}
 .ev.s-encours{background:var(--c);color:#fff}.ev.s-encours b,.ev.s-encours small{color:#fff}
-.ev.s-annule{background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 5px,#fff 5px,#fff 10px);color:var(--muted);border-left:5px dashed var(--c);opacity:.8;z-index:0}
+.ev.s-annule{background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 5px,#fff 5px,#fff 10px);color:var(--muted);border-left:5px dashed var(--c);opacity:.8;z-index:1}
 .ev.s-annule .nm{text-decoration:line-through}.ev.s-annule::after{content:"ⓘ";position:absolute;right:5px;top:2px;color:var(--c);font-weight:700}
 .aff{position:absolute;left:0;right:0;z-index:0;pointer-events:none;overflow:hidden;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);background:rgba(88,106,126,.09);border-left:4px solid #9aa9b8}
 .aff.cs{color:#16784a;background:rgba(22,120,74,.10);border-left-color:#16784a}
+.ev-srv{position:absolute;left:2px;right:2px;z-index:1;overflow:hidden;padding:3px 7px;text-align:left;font-size:12px;line-height:1.3;font-weight:600;color:#4c1d95;background:#ece5fb;border:0;border-left:5px solid #6b3fc4;border-radius:6px;cursor:pointer;white-space:nowrap;text-overflow:ellipsis}
+.ev-srv:hover{filter:brightness(.96)}
 .etat{padding:6px 12px;font-size:13px;font-weight:700;border-radius:999px;color:var(--muted);background:var(--line-soft)}.etat.cs{color:#16784a;background:#e1f4e9}.etat.oth{color:var(--primary-d);background:var(--primary-soft)}
 .raison{margin-top:12px;padding:12px;border-radius:12px;background:var(--late-soft);border:1px dashed var(--late);color:var(--late);font-weight:600}
 .raison small{display:block;font-weight:500;color:var(--muted);margin-top:4px}
 .ev[aria-current=true]{outline:3px solid var(--ink);z-index:3}
-.now{position:absolute;left:0;right:0;height:2px;background:#e0334a;z-index:2;pointer-events:none}
+.now{position:absolute;left:0;right:0;height:2px;background:#e0334a;z-index:3;pointer-events:none}
 .now::before{content:"";position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:#e0334a}
 #detail{position:fixed;top:0;right:0;bottom:0;z-index:50;width:min(420px,100%);padding:20px;overflow:auto;background:#fff;border-left:1px solid var(--line);box-shadow:var(--shadow)}
 .dh{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
@@ -98,7 +100,6 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
       <div class="seg"><button class="b" id="v-day">Jour</button><button class="b" id="v-week">Semaine</button></div>
     </div>
     <div class="legend" id="legend"></div>
-   <!-- <p class="mut" style="font-size:13px;margin:-4px 0 10px">Double-cliquez sur un créneau (ou appuyez sur Entrée) pour ouvrir le dossier et accéder aux actions.</p>-->
     <div id="wrap"><div id="cal"></div></div>
   </div>
 </main>
@@ -114,14 +115,17 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultation',termine:'Terminé',annule:'Annulé'};
+const MODES={presentiel:'Sur place',distanciel:'En distanciel',hybride:'Hybride (sur place + distanciel)'};
+const CATS={reunion:'Réunion',staff:'Staff / relève',formation:'Formation',autre:'Événement'};
 const PX=120,DUR=15; // 120 px par heure, créneau affiché = 15 min
-let medecin={},rdvs=[],affs=[],unsubA=null,sel=null,unsub=null,view=innerWidth<820?'day':'week',anchor=new Date(),hid=new Set(),go=true;
+let medecin={},rdvs=[],affs=[],evts=[],unsubA=null,unsubE=null,sel=null,unsub=null,view=innerWidth<820?'day':'week',anchor=new Date(),hid=new Set(),go=true;
 const tm=h=>{const[a,b]=String(h).split(':');return +a*60+ +b};
-const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
-const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
+const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]};
+const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''};
+
 /* ---- Notifications : bulle affichée par la page parente ---- */
 const ORIGINE_PARENT_BULLE = "*";
-const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
+const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"};
 function afficherBulle(message, typeBulle){
   if(window.parent === window){
     console.warn("afficherBulle appelée sans parent, message perdu :", message);
@@ -161,7 +165,11 @@ $('#jour').onchange=e=>{if(e.target.value){anchor=new Date(e.target.value+'T12:0
 $('#v-day').onclick=()=>{view='day';ecouter()};$('#v-week').onclick=()=>{view='week';ecouter()};
 $('#legend').onclick=e=>{const c=e.target.closest('.chip');if(!c||!c.dataset.s)return;const s=c.dataset.s;hid.has(s)?hid.delete(s):hid.add(s);rendre()};
 const pick=e=>{const b=e.target.closest('.ev');if(!b)return null;sel=b.dataset.id;document.querySelectorAll('.ev').forEach(x=>x.setAttribute('aria-current',x===b));return b};
-$('#cal').onclick=pick;
+$('#cal').onclick=e=>{
+  const srv=e.target.closest('.ev-srv');
+  if(srv){ouvrirEvenement(srv.dataset.evid);return}
+  pick(e);
+};
 $('#cal').ondblclick=e=>{if(pick(e))ouvrir()};
 $('#cal').onkeydown=e=>{if(e.key==='Enter'&&pick(e))ouvrir()};
 
@@ -170,17 +178,25 @@ function ecouter(){
   const[a,b]=plage();
   $('#jour').value=iso(anchor);$('#v-day').classList.toggle('on',view==='day');$('#v-week').classList.toggle('on',view==='week');
   unsub=onSnapshot(query(collection(db,'rdv-urgences'),where('date','>=',iso(a)),where('date','<=',iso(b))),s=>{
-    // calendrier personnel : uniquement mes consultations (les rendez-vous sans médecin attribué restent visibles pour pouvoir être pris en charge)
     rdvs=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.medecinId||r.medecinId===medecin.uid).sort((x,y)=>x.heure.localeCompare(y.heure));
     rendre();if(sel&&!$('#detail').contains(document.activeElement))ouvrir();
   },e=>{console.error(e);afficherBulle('Chargement impossible', BULLE.ERR)});
 }
 
-/* ---- Affectations : elles déterminent si je suis en consultation ---- */
-const applique=(a,d)=>a.date?a.date===d:(a.jours||[]).includes(new Date(d+'T00:00').getDay())&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu);
+/* ---- Affectations & événements (date unique, plage multi-jours, ou hebdomadaire) ---- */
+const applique=(a,d)=>{
+  if(a.date && a.dateFin) return a.date<=d && d<=a.dateFin;
+  if(a.date) return a.date===d;
+  return (a.jours||[]).includes(new Date(d+'T00:00').getDay())&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu);
+};
 function ecouterAffectations(){
   if(unsubA)unsubA();
   unsubA=onSnapshot(query(collection(db,'affectations'),where('uid','==',medecin.uid)),s=>{affs=s.docs.map(d=>({id:d.id,...d.data()}));rendre()},e=>{console.error(e);afficherBulle('Affectations indisponibles', BULLE.ERR)});
+  if(unsubE)unsubE();
+  unsubE=onSnapshot(collection(db,'evenements'),s=>{
+    evts=s.docs.map(d=>({id:d.id,...d.data()})).filter(e=>e.tous||(e.participants||[]).includes(medecin.uid));
+    rendre();
+  },e=>console.error(e));
 }
 function majEtat(){
   const n=new Date(),k=iso(n),m=n.getHours()*60+n.getMinutes(),a=affs.filter(x=>applique(x,k)&&tm(x.start)<=m&&m<tm(x.end)),c=a.find(x=>x.consultation),e=$('#etat');
@@ -191,11 +207,14 @@ setInterval(majEtat,60000);
 
 /* ---- Rendu du calendrier ---- */
 function rendre(){
-  const[a,b]=plage(),days=[],today=iso(new Date()),L={weekday:'short',day:'numeric',month:'short'};
+  const[a,b]=plage(),days=[],today=iso(new Date());
   for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1))days.push(new Date(d));
   $('#titre').textContent=view==='day'?a.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):a.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' – '+b.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
-  $('#legend').innerHTML=Object.keys(STAT).map(s=>`<button class="chip s-${s}" data-s="${s}" aria-pressed="${!hid.has(s)}">${STAT[s]} · ${rdvs.filter(r=>r.statut===s).length}</button>`).join('')+'<span class="chip" style="--c:#16784a;--bg:#e1f4e9;cursor:default">Affecté en consultation</span><span class="chip" style="--c:#586a7e;--bg:#eef2f6;cursor:default">Autre affectation</span>';
-  const h0=0,h1=24,H=h1*PX; // plage complète 00:00 – 24:00
+  $('#legend').innerHTML=Object.keys(STAT).map(s=>`<button class="chip s-${s}" data-s="${s}" aria-pressed="${!hid.has(s)}">${STAT[s]} · ${rdvs.filter(r=>r.statut===s).length}</button>`).join('')
+    +'<span class="chip" style="--c:#16784a;--bg:#e1f4e9;cursor:default">Affecté en consultation</span>'
+    +'<span class="chip" style="--c:#586a7e;--bg:#eef2f6;cursor:default">Autre affectation</span>'
+    +'<span class="chip" style="--c:#6b3fc4;--bg:#ece5fb;cursor:default">Réunion / événement</span>';
+  const h0=0,h1=24,H=h1*PX;
   const cal=$('#cal');cal.style.gridTemplateColumns=`56px repeat(${days.length},minmax(${view==='day'?0:120}px,1fr))`;
   let h='<div class="gh"></div>'+days.map(d=>`<div class="gh ${iso(d)===today?'today':''}">${view==='day'?'':d.toLocaleDateString('fr-FR',{weekday:'short'})}<b>${d.getDate()}</b></div>`).join('');
   h+=`<div class="gut" style="height:${H}px">`+Array.from({length:h1-h0},(_,i)=>i?`<span style="top:${i*PX}px">${String(h0+i).padStart(2,'0')}:00</span>`:'').join('')+'</div>';
@@ -205,6 +224,11 @@ function rendre(){
     rdvs.filter(r=>r.date===k&&!hid.has(r.statut)).forEach(r=>(grp[r.heure]??=[]).push(r));
     h+=`<div class="col ${k===today?'today':''}" style="height:${H}px;background-size:100% ${PX/4*4}px">`;
     h+=affs.filter(a=>applique(a,k)).map(a=>`<div class="aff ${a.consultation?'cs':''}" style="top:${(tm(a.start)-h0*60)/60*PX}px;height:${(tm(a.end)-tm(a.start))/60*PX}px">${esc(a.posteLabel||a.poste||'')} · ${esc(a.start)}–${esc(a.end)}</div>`).join('');
+    h+=evts.filter(ev=>applique(ev,k)).map(ev=>{
+      const ico=ev.mode==='distanciel'?'💻':(ev.mode==='hybride'?'💻📍':'📍');
+      const sub=ev.mode==='distanciel'?'Distanciel':(ev.lieu||'');
+      return `<button type="button" class="ev-srv" data-evid="${ev.id}" style="top:${(tm(ev.start)-h0*60)/60*PX}px;height:${Math.max(26,(tm(ev.end)-tm(ev.start))/60*PX-2)}px" title="${esc(ev.titre+' · '+ev.start+'–'+ev.end+(sub?' · '+sub:''))}"><b>${esc(ev.start)}</b> ${ico} ${esc(ev.titre)}${sub?` <small>(${esc(sub)})</small>`:''}</button>`;
+    }).join('');
     for(const hr in grp)grp[hr].forEach((r,i,arr)=>{
       const p=r.patient||{},top=(tm(hr)-h0*60)/60*PX;
       h+=`<button class="ev s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''} title="${esc(hr+' · '+STAT[r.statut]+' · '+(p.prenom||'')+' '+(p.nom||'')+' · '+(r.motif||'')+' · '+symsDe(r).join(', ')+(r.statut==='annule'?' · Annulation : '+(r.motifAnnulation||'motif non renseigné'):''))}" style="top:${top}px;height:${Math.max(26,PX*(r.duree||DUR)/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${r.statut==='annule'?'✕ ':''}${r.alerteVitale?'⚠ ':''}${demandeurDe(r)?'👤 ':''}<span class="nm">${esc(p.prenom)} ${esc(p.nom)}</span>${view==='day'?` <small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}</small>`:''}</button>`;
@@ -216,7 +240,7 @@ function rendre(){
   if(go){go=false;$('#wrap').scrollTop=Math.max(0,(days.some(d=>iso(d)===today)?nm-60:480)/60*PX)}
 }
 
-/* ---- Fiche patient (même index que ajouterpatient.html) ---- */
+/* ---- Fiche patient ---- */
 function buildSearchIndex(nom,prenom,dn){
   const n=(nom||'').toLowerCase(),p=(prenom||'').toLowerCase(),idx=new Set();
   for(const w of [n,p])for(let i=1;i<=w.length;i++)idx.add(w.slice(0,i));
@@ -291,6 +315,29 @@ async function ouvrir(){
       tx.update(doc(db,'rdv-urgences',r.id),{statut:'annule',annuleLe:serverTimestamp(),annulePar:'medecin',motifAnnulation:'Annulé par le service'});
     });afficherBulle('Rendez-vous annulé', BULLE.OK)}catch(e){afficherBulle('Échec de l’annulation', BULLE.ERR)}
   };
+}
+
+/* ---- Détail d'un événement / réunion (clic sur un événement violet) ---- */
+function ouvrirEvenement(id){
+  const ev=evts.find(x=>x.id===id),box=$('#detail');
+  if(!ev){box.hidden=true;return}
+  sel=null;
+  document.querySelectorAll('.ev').forEach(x=>x.setAttribute('aria-current','false'));
+  const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</span></div>`;
+  const periode=ev.dateFin&&ev.dateFin!==ev.date
+    ?`Du ${new Date(ev.date+'T12:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} au ${new Date(ev.dateFin+'T12:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`
+    :new Date(ev.date+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  let h=`<div class="dh"><h2 class="card-title">${esc(ev.titre)}</h2><button class="x" id="closeEv" aria-label="Fermer">×</button></div>`
+    +`<span class="pill" style="--c:#6b3fc4;--bg:#ece5fb">${esc(CATS[ev.cat]||'Événement')}</span>`
+    +F('Date',periode)
+    +F('Horaires',`${ev.start} – ${ev.end}`)
+    +F('Modalité',MODES[ev.mode]||ev.mode);
+  if(ev.lieu) h+=F('Lieu / salle',ev.lieu);
+  if(ev.lien) h+=`<div class="fact"><label>Lien visioconférence</label><a href="${esc(ev.lien)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;word-break:break-all">${esc(ev.lien)}</a></div>`;
+  if(ev.description) h+=F('Ordre du jour / précisions',ev.description);
+  if(ev.creeParNom) h+=F('Organisé par',ev.creeParNom);
+  box.hidden=false;box.innerHTML=h;
+  $('#closeEv').onclick=()=>{box.hidden=true};
 }
 </script>
 </body>
