@@ -544,8 +544,12 @@ $('#dSave').onclick=async()=>{
   const dateVal=hebdo?null:(plageMode?$('#dDateDebut').value:$('#dDate').value);
   const dateFinVal=plageMode?$('#dDateFin').value:null;
   const base={poste:p.k,posteLabel:p.l,consultation:!!p.rdv,start:$('#dStart').value,end:$('#dEnd').value,jours:hebdo?jours:null,date:dateVal,dateFin:dateFinVal,depuis:hebdo?($('#dDepuis').value||null):null,jusqu:hebdo?($('#dJusqu').value||null):null};
-  const uids=editId?[$('#dUser'].value]:[...new Set([$('#dUser'].value,...[...document.querySelectorAll('#dMore input:checked')].map(i=>i.value)])];
-  const conflits=uids.filter(u=>affs.some(a=>a.uid===u&&a.id!==editId&&seChevauchent(a,base))).map(nomDe);
+const uids = editId
+  ? [$('#dUser').value]
+  : [...new Set([
+      $('#dUser').value,
+      ...[...document.querySelectorAll('#dMore input:checked')].map(i => i.value)
+    ])];  const conflits=uids.filter(u=>affs.some(a=>a.uid===u&&a.id!==editId&&seChevauchent(a,base))).map(nomDe);
   if(conflits.length)return afficherBulle('Chevauchement : '+conflits.join(', '),BULLE.ERR);
   $('#dSave').disabled=true;
   try{
