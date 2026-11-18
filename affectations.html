@@ -69,7 +69,7 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--primary);bo
 .ca b{color:var(--c);font-variant-numeric:tabular-nums}.ca:hover{filter:brightness(.96)}
 .vide{padding:28px;text-align:center;color:var(--muted)}
 .msg{padding:14px 16px;border-radius:12px;background:var(--late-soft);color:var(--late);font-weight:600}
-dialog{width:min(640px,calc(100% - 24px));max-height:calc(100% - 24px);padding:0;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);color:var(--ink)}
+dialog{width:min(680px,calc(100% - 24px));max-height:calc(100% - 24px);padding:0;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);color:var(--ink)}
 dialog::backdrop{background:rgba(17,35,54,.35)}
 .dh{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line)}.dh h2{font-size:17px}
 .x{width:34px;height:34px;font-size:21px;background:#fff;border:1px solid var(--line);border-radius:10px;cursor:pointer}
@@ -82,7 +82,24 @@ dialog::backdrop{background:rgba(17,35,54,.35)}
 .chips input{width:auto;min-height:0}
 details{border:1px dashed var(--line);border-radius:10px;padding:8px 12px}summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
 details .chips{margin-top:8px;max-height:150px;overflow:auto}
-.note{padding:10px 12px;border-radius:10px;background:var(--primary-soft);color:var(--primary-d);font-size:13px;font-weight:600}
+
+/* PRO ATTENDEE PICKER STYLES */
+.attendee-box{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--field)}
+.attendee-search{margin-bottom:8px}
+.attendee-list{max-height:180px;overflow-y:auto;display:grid;gap:6px}
+.attendee-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;gap:8px}
+.attendee-item:hover{border-color:var(--primary)}
+.att-info{flex:1;min-width:0}
+.att-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att-sub{font-size:12px;color:var(--muted)}
+.badge-status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.badge-free{background:var(--ok-soft);color:var(--ok)}
+.badge-busy{background:var(--late-soft);color:var(--late)}
+.role-toggle{display:flex;gap:4px}
+.role-btn{padding:4px 10px;font-size:12px;font-weight:600;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer}
+.role-btn.active-mand{background:var(--primary);color:#fff;border-color:var(--primary)}
+.role-btn.active-opt{background:#e3f1f9;color:var(--primary-d);border-color:var(--primary)}
+
 .df{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding:13px 20px;border-top:1px solid var(--line)}.df .btn-danger{margin-right:auto}
 .hint{font-size:13px;color:var(--muted)}
 .modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
@@ -90,7 +107,6 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
 .modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}.modalna p{margin-bottom:8px}
 .meeting-card{padding:12px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .meeting-card:hover{border-color:var(--primary);background:var(--primary-soft)}
-.attendee-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--field);border-radius:8px;margin-bottom:4px;font-size:13.5px}
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
@@ -182,7 +198,7 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
   <div class="df"><button class="btn-danger" id="dDel">Supprimer</button><button class="btn-secondary" id="dCancel">Annuler</button><button class="btn-primary" id="dSave">Enregistrer</button></div>
 </dialog>
 
-<!-- ===== MODALE RÉUNION / ÉVÉNEMENT (Outlook Style) ===== -->
+<!-- ===== MODALE RÉUNION PRO STYLE ===== -->
 <dialog id="dlgEv">
   <div class="dh"><h2 id="eTitreDlg">Nouvelle réunion</h2><button class="x" id="eX" aria-label="Fermer">×</button></div>
   <div class="db">
@@ -217,25 +233,19 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
     <div id="eLienBox" hidden><label for="eLien">Lien de visioconférence</label><input id="eLien" type="url" placeholder="https://..."></div>
     <div><label for="eDesc">Ordre du jour / description <small>(facultatif)</small></label><textarea id="eDesc" placeholder="Informations complémentaires…"></textarea></div>
 
-    <!-- PARTICIPANTS & RÔLES (Outlook Style) -->
+    <!-- PRO ATTENDEE PICKER SECTION -->
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span class="lbl" style="margin:0">Participants &amp; Invités</span>
-        <label class="chk-inline" style="min-height:30px;font-size:12.5px"><input type="checkbox" id="eTous"> Toute l’équipe (250)</label>
+        <span class="lbl" style="margin:0">Participants &amp; Disponibilités</span>
+        <label class="chk-inline" style="min-height:30px;font-size:12.5px"><input type="checkbox" id="eTous"> Toute l’équipe</label>
       </div>
-      <div id="ePartSection">
-        <div class="two" style="margin-bottom:8px">
-          <input id="eSearchPart" type="search" placeholder="Filtrer pour ajouter..." style="min-height:36px">
-          <select id="eAddSpec" style="min-height:36px"><option value="">+ Ajouter par spécialité…</option></select>
-        </div>
-        <div style="font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px">Participants obligatoires :</div>
-        <div id="ePartsMandatory" style="display:grid;gap:4px;max-height:130px;overflow:auto;padding:6px;border:1px solid var(--line-soft);border-radius:10px;margin-bottom:10px"></div>
-        <div style="font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px">Participants facultatifs :</div>
-        <div id="ePartsOptional" style="display:grid;gap:4px;max-height:130px;overflow:auto;padding:6px;border:1px solid var(--line-soft);border-radius:10px"></div>
+      <div class="attendee-box" id="ePartSection">
+        <input class="attendee-search" id="eSearchPart" type="search" placeholder="Rechercher par nom ou spécialité..." style="min-height:38px">
+        <div class="attendee-list" id="attendeeListContainer"></div>
       </div>
     </div>
 
-    <!-- OPTIONS AVANCÉES DE RÉUNION (Outlook / Google Calendar) -->
+    <!-- OPTIONS AVANCÉES -->
     <details style="margin-top:4px"><summary>Options de réunion avancées</summary>
       <div style="display:grid;gap:8px;margin-top:10px">
         <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optInvite" checked> Autoriser les participants à inviter d'autres personnes</label>
@@ -259,7 +269,7 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app);
 const $=s=>document.querySelector(s);
@@ -340,7 +350,6 @@ function seChevauchent(a,b){
   if(!a.jours.some(j=>b.jours.includes(j)))return false;
   return(!a.jusqu||!b.depuis||b.depuis<=a.jusqu)&&(!b.jusqu||!a.depuis||a.depuis<=b.jusqu);
 }
-const couvre=(a,date,heure,d)=>applique(a,date)&&tmin(heure)>=tmin(a.start)&&tmin(heure)+d<=tmin(a.end);
 
 async function charger(){
   const [u,c]=await Promise.all([getDocs(collection(db,'medecins')),getDoc(doc(db,'rdv-config','consultations'))]);
@@ -349,21 +358,10 @@ async function charger(){
 
   const specs=[...new Set(users.map(x=>x.specialite).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
   $('#fSpec').innerHTML='<option value="">Toutes les spécialités</option>'+specs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
-  $('#eAddSpec').innerHTML='<option value="">+ Ajouter par spécialité…</option>'+specs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   $('#fPoste').innerHTML='<option value="">Tous les postes</option>'+POSTES.map(p=>`<option value="${p.k}">${esc(p.l)}</option>`).join('');
   $('#dUser').innerHTML=users.map(x=>`<option value="${esc(x.uid)}">${esc(x.nom)}${x.specialite?' — '+esc(x.specialite):''}</option>`).join('');
   $('#dPoste').innerHTML=POSTES.map(p=>`<option value="${p.k}">${esc(p.l)}${p.rdv?' (ouvre des rendez-vous)':''}</option>`).join('');
   $('#dDays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<label><input type="checkbox" value="${d}">${JOURS[d]}</label>`).join('');
-  
-  const partHtml=users.map(x=>`
-    <div class="attendee-row" data-search="${esc(norm(x.nom+' '+x.specialite))}"><span style="font-weight:600">${esc(x.nom)} <small style="color:var(--muted)">${esc(x.specialite)}</small></span>
-      <div style="display:flex;gap:12px">
-        <label style="font-size:12.5px;cursor:pointer"><input type="checkbox" class="cb-mand" value="${esc(x.uid)}"> Obligatoire</label>
-        <label style="font-size:12.5px;cursor:pointer"><input type="checkbox" class="cb-opt" value="${esc(x.uid)}"> Facultatif</label>
-      </div>
-    </div>`).join('');
-  $('#ePartsMandatory').innerHTML=partHtml;
-  $('#ePartsOptional').innerHTML=partHtml;
 
   if(unsubA)unsubA();
   unsubA=onSnapshot(collection(db,'affectations'),s=>{affs=s.docs.map(d=>({id:d.id,...d.data()}));if(currentVolet==='aff')rendre()},e=>{console.error(e)});
@@ -562,29 +560,83 @@ $('#dDel').onclick=async()=>{
   await deleteDoc(doc(db,'affectations',editId));await miroir();$('#dlg').close();afficherBulle('Supprimé',BULLE.OK);
 };
 
-/* Fenêtre Réunion / Événement (Outlook Style) */
+/* --- PRO ATTENDEE PICKER SCRIPT --- */
+let selectedMandatory = new Set();
+let selectedOptional = new Set();
+
+function renderAttendeePicker(){
+  const queryText = norm($('#eSearchPart').value);
+  const dateDebut = $('#eDateDebut').value;
+  const hStart = $('#eStart').value;
+  const hEnd = $('#eEnd').value;
+
+  const container = $('#attendeeListContainer');
+  const filteredUsers = users.filter(u => norm(u.nom + ' ' + u.specialite).includes(queryText));
+
+  if(!filteredUsers.length){
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:13px">Aucun membre trouvé</div>';
+    return;
+  }
+
+  container.innerHTML = filteredUsers.map(u => {
+    const isMand = selectedMandatory.has(u.uid);
+    const isOpt = selectedOptional.has(u.uid);
+    
+    let isBusy = false;
+    if(dateDebut && hStart && hEnd){
+      isBusy = affs.some(a => a.uid === u.uid && applique(a, dateDebut) && tmin(a.start) < tmin(hEnd) && tmin(hStart) < tmin(a.end)) ||
+               evts.some(ev => (ev.participants||[]).includes(u.uid) && applique(ev, dateDebut) && tmin(ev.start) < tmin(hEnd) && tmin(hStart) < tmin(ev.end) && ev.id !== editEvId);
+    }
+
+    const badgeHtml = isBusy 
+      ? `<span class="badge-status badge-busy">🔴 Occupé(e)</span>` 
+      : `<span class="badge-status badge-free">🟢 Libre</span>`;
+
+    return `
+      <div class="attendee-item" data-uid="${esc(u.uid)}">
+        <div class="att-info">
+          <div class="att-name">${esc(u.nom)}</div>
+          <div class="att-sub">${esc(u.specialite || 'Personnel')} · ${badgeHtml}</div>
+        </div>
+        <div class="role-toggle">
+          <button type="button" class="role-btn ${isMand?'active-mand':''}" onclick="toggleAttendeeRole('${u.uid}','mand')">Obligatoire</button>
+          <button type="button" class="role-btn ${isOpt?'active-opt':''}" onclick="toggleAttendeeRole('${u.uid}','opt')">Facultatif</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window.toggleAttendeeRole=(uid, role)=>{
+  if(role==='mand'){
+    if(selectedMandatory.has(uid)){ selectedMandatory.delete(uid); }
+    else { selectedMandatory.add(uid); selectedOptional.delete(uid); }
+  } else {
+    if(selectedOptional.has(uid)){ selectedOptional.delete(uid); }
+    else { selectedOptional.add(uid); selectedMandatory.delete(uid); }
+  }
+  renderAttendeePicker();
+};
+
+$('#eSearchPart').oninput = renderAttendeePicker;
+$('#eDateDebut').onchange = renderAttendeePicker;
+$('#eStart').onchange = renderAttendeePicker;
+$('#eEnd').onchange = renderAttendeePicker;
+$('#eTous').onchange = e => {
+  const checked = e.target.checked;
+  $('#ePartSection').style.opacity = checked ? '.4' : '1';
+  $('#ePartSection').style.pointerEvents = checked ? 'none' : 'auto';
+};
+
 function syncEvMode(){
   const m=$('#eMode').value;
   $('#eLieuBox').hidden=m==='distanciel';
   $('#eLienBox').hidden=m==='presentiel';
 }
 $('#eMode').onchange=syncEvMode;
-$('#eTous').onchange=e=>{$('#ePartSection').style.opacity=e.target.checked?'.4':'1';$('#ePartSection').style.pointerEvents=e.target.checked?'none':'auto'};
-$('#eAddSpec').onchange=e=>{
-  const sp=e.target.value;if(!sp)return;
-  users.filter(u=>u.specialite===sp).forEach(u=>{
-    const cbMand=$(`#ePartsMandatory input.cb-mand[value="${CSS.escape(u.uid)}"]`);if(cbMand)cbMand.checked=true;
-  });
-  e.target.value='';
-};
-$('#eSearchPart').oninput=e=>{
-  const q=norm(e.target.value);
-  document.querySelectorAll('.attendee-row').forEach(l=>{l.hidden=q&&!l.dataset.search.includes(q)});
-};
 
-function ouvrirEvDlg(ev,pre={}){
+function ouvrirEvDlg(ev){
   editEvId=ev?.id||null;
-  const d=pre.date||iso(anchor);
+  const d=iso(anchor);
   $('#eTitreDlg').textContent=ev?'Modifier la réunion':'Nouvelle réunion';
   $('#eCat').value=ev?.cat||'reunion';
   $('#eTitre').value=ev?.titre||'';
@@ -599,21 +651,18 @@ function ouvrirEvDlg(ev,pre={}){
   
   const tous=ev?!!ev.tous:false;
   $('#eTous').checked=tous;
-  $('#ePartSection').style.opacity=tous?'.4':'1';$('#ePartSection').style.pointerEvents=tous?'none':'auto';
+  $('#ePartSection').style.opacity=tous?'.4':'1';
+  $('#ePartSection').style.pointerEvents=tous?'none':'auto';
 
-  const mandSet=new Set(ev?.participantsMandatory||[]);
-  const optSet=new Set(ev?.participantsOptional||[]);
-  document.querySelectorAll('.attendee-row').forEach(row=>{
-    const uid=row.querySelector('.cb-mand').value;
-    row.querySelector('.cb-mand').checked=mandSet.has(uid);
-    row.querySelector('.cb-opt').checked=optSet.has(uid);
-  });
+  selectedMandatory = new Set(ev?.participantsMandatory||[]);
+  selectedOptional = new Set(ev?.participantsOptional||[]);
 
   $('#optInvite').checked=ev?.optInvite??true;
   $('#optMaskList').checked=ev?.optMaskList??false;
   $('#optResponse').checked=ev?.optResponse??true;
 
   $('#eDel').hidden=!ev;
+  renderAttendeePicker();
   $('#dlgEv').showModal();
 }
 $('#eX').onclick=$('#eCancel').onclick=()=>$('#dlgEv').close();
@@ -625,11 +674,8 @@ $('#eSave').onclick=async()=>{
   const mode=$('#eMode').value;
   const tous=$('#eTous').checked;
 
-  const mand=[],opt=[];
-  if(!tous){
-    document.querySelectorAll('#ePartsMandatory .cb-mand:checked').forEach(cb=>mand.push(cb.value));
-    document.querySelectorAll('#ePartsOptional .cb-opt:checked').forEach(cb=>opt.push(cb.value));
-  }
+  const mand=[...selectedMandatory];
+  const opt=[...selectedOptional];
 
   if(!titre)return afficherBulle('Saisissez un titre',BULLE.WARN);
   if(!d1||d2<d1)return afficherBulle('Dates invalides',BULLE.WARN);
