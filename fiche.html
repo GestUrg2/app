@@ -818,6 +818,67 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
   .panel-head{padding-top:12px;padding-bottom:10px}
 }
 
+/* ---------- MODALE PROFESSIONNELS DE SANTÉ ---------- */
+#modalProSante.modal-overlay,#modalActionsPro.modal-overlay{
+  z-index:10020;align-items:center;justify-content:center;
+  padding:clamp(12px,3vw,28px);
+}
+#modalProSante .modal{
+  width:min(720px,100%);max-height:min(90dvh,900px);
+  padding:0;overflow:hidden;display:flex;flex-direction:column;
+  border:1px solid rgba(216,225,234,.9);border-radius:20px;
+}
+#modalProSante .pro-modal-head{
+  display:flex;align-items:center;gap:13px;padding:20px 24px;
+  background:linear-gradient(180deg,#fff,var(--field));border-bottom:1px solid var(--line);
+}
+#modalProSante .pro-modal-head .role-ico{border-radius:12px;width:44px;height:44px}
+#modalProSante .pro-modal-head h3{flex:1;margin:0;padding:0;border:0;font-size:19px}
+#modalProSante .pro-modal-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
+#modalProSante .pro-modal-body{padding:20px 24px 8px;overflow-y:auto;overscroll-behavior:contain}
+#modalProSante .pro-section{
+  padding:16px;margin-bottom:16px;background:#fff;
+  border:1px solid var(--line);border-radius:14px;
+}
+#modalProSante .pro-section-title{
+  display:flex;align-items:center;gap:9px;margin:0 0 12px;
+  color:var(--ink);font-size:14px;font-weight:700;
+}
+#modalProSante .pro-section-title .i{color:var(--primary)}
+#modalProSante .pro-search-grid{display:grid;grid-template-columns:1fr 1fr auto;align-items:end;gap:12px}
+#modalProSante .pro-search-grid .field{min-width:0}
+#modalProSante .pro-search-grid label,#modalProSante .form-grid label{margin-top:0}
+#modalProSante #btnExecuterRechercheFHIR{white-space:nowrap;min-height:48px}
+#modalProSante #resultatsRechercheFHIR{max-height:230px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;margin-top:12px;background:#fff}
+#modalProSante #resultatsRechercheFHIR > div[style*="border-bottom"]{padding:12px 14px !important}
+#modalProSante .pro-manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+#modalProSante .pro-manual-grid .full{grid-column:1/-1}
+#modalProSante .pro-modal-foot{
+  display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;
+  padding:16px 24px calc(18px + var(--safe-b));margin:0;
+  background:#fff;border-top:1px solid var(--line);
+}
+#modalProSante .pro-modal-foot .btn-id{min-width:120px}
+#modalActionsPro .modal{width:min(420px,100%);padding:24px}
+#modalActionsPro .modal h3{justify-content:center}
+#modalActionsPro .pro-action-list{display:grid;gap:10px;margin-top:16px}
+#modalActionsPro .pro-action-list button{width:100%;justify-content:flex-start}
+#listeProSanteContainer > div{transition:border-color .15s,box-shadow .15s}
+#listeProSanteContainer > div:hover{border-color:#b5d6ea;box-shadow:var(--shadow-sm)}
+@media(max-width:640px){
+  #modalProSante.modal-overlay{align-items:flex-end;padding:0}
+  #modalProSante .modal{width:100%;max-height:94dvh;border-radius:20px 20px 0 0}
+  #modalProSante .pro-modal-head{padding:16px 18px}
+  #modalProSante .pro-modal-body{padding:14px 16px 4px}
+  #modalProSante .pro-section{padding:14px}
+  #modalProSante .pro-search-grid{grid-template-columns:1fr 1fr}
+  #modalProSante .pro-search-grid #btnExecuterRechercheFHIR{grid-column:1/-1;width:100%}
+  #modalProSante .pro-manual-grid{grid-template-columns:1fr}
+  #modalProSante .pro-manual-grid .full{grid-column:auto}
+  #modalProSante .pro-modal-foot{padding:14px 16px calc(16px + var(--safe-b))}
+  #modalProSante .pro-modal-foot button{flex:1}
+}
+
 /* ---------- COMPLÉMENTS ---------- */
 .field-group{position:relative}
 .equipe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
@@ -994,60 +1055,57 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
 </div>
 
 <!-- Modal d'ajout / recherche de praticien via l'API e-Santé FHIR -->
-<div class="modal-overlay" id="modalProSante" style="display:none; z-index:9999;">
-  <div class="modal" style="max-width: 650px;">
-    <h3><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Rechercher un praticien (Annuaire e-Santé)</h3>
-    
-    <div class="field" style="margin-bottom: 14px;">
-   <div class="field">
-  <label for="searchProFamily">Nom</label>
-  <input
-    type="text"
-    id="searchProFamily"
-    placeholder="Ex. : Dupond"
-  >
-</div>
-
-<div class="field">
-  <label for="searchProGiven">Prénom</label>
-  <input
-    type="text"
-    id="searchProGiven"
-    placeholder="Ex. : Jean"
-  >
-</div>
-
-        <button type="button" id="btnExecuterRechercheFHIR" class="btn-id btn-id-v">Rechercher</button>
-      </div>
-    
-
-    <div id="resultatsRechercheFHIR" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; display: none; margin-bottom: 14px; background: #fff;">
-      <!-- Résultats de l'API -->
-    </div>
-
-    <hr style="margin: 14px 0;">
-
-    <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Ou saisir / modifier manuellement la fiche</h4>
-    <div class="form-grid">
-      <div class="field">
-        <label for="proNom">Nom & Prénom</label>
-        <input type="text" id="proNom" placeholder="Dr Jean Dupont" />
-      </div>
-      <div class="field">
-        <label for="proProfession">Profession / Spécialité</label>
-        <input type="text" id="proProfession" placeholder="Médecin traitant / Cardiologue" />
-      </div>
-      <div class="field full">
-        <label for="proCoordonnees">Coordonnées (Adresse, Téléphone, Email)</label>
-        <input type="text" id="proCoordonnees" placeholder="10 rue de la Paix, Paris - 0102030405" />
-      </div>
-      <div class="field full">
-        <label for="proNotes">Notes / Complément</label>
-        <textarea id="proNotes" placeholder="Informations complémentaires..." style="min-height: 70px;"></textarea>
+<div class="modal-overlay" id="modalProSante" style="display:none; z-index:10020;" role="dialog" aria-modal="true" aria-labelledby="titreModalProSante">
+  <div class="modal">
+    <div class="pro-modal-head">
+      <span class="role-ico"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg></span>
+      <div style="min-width:0;flex:1;">
+        <h3 id="titreModalProSante">Professionnel de santé</h3>
+        <p>Rechercher dans l’annuaire ou renseigner les informations manuellement.</p>
       </div>
     </div>
 
-    <div class="modal-actions">
+    <div class="pro-modal-body">
+      <section class="pro-section" aria-labelledby="titreRecherchePro">
+        <h4 class="pro-section-title" id="titreRecherchePro"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg> Annuaire e-Santé</h4>
+        <div class="pro-search-grid">
+          <div class="field">
+            <label for="searchProFamily">Nom</label>
+            <input type="text" id="searchProFamily" placeholder="Ex. : Dupont" autocomplete="family-name">
+          </div>
+          <div class="field">
+            <label for="searchProGiven">Prénom</label>
+            <input type="text" id="searchProGiven" placeholder="Ex. : Jean" autocomplete="given-name">
+          </div>
+          <button type="button" id="btnExecuterRechercheFHIR" class="btn-id btn-id-v"><svg class="i sm" aria-hidden="true"><use href="#i-search"/></svg> Rechercher</button>
+        </div>
+        <div id="resultatsRechercheFHIR" style="display:none;" aria-live="polite"></div>
+      </section>
+
+      <section class="pro-section" aria-labelledby="titreSaisiePro">
+        <h4 class="pro-section-title" id="titreSaisiePro"><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg> Fiche du professionnel</h4>
+        <div class="pro-manual-grid">
+          <div class="field">
+            <label for="proNom">Nom et prénom <span style="color:var(--late);">*</span></label>
+            <input type="text" id="proNom" placeholder="Dr Jean Dupont" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="proProfession">Profession / Spécialité</label>
+            <input type="text" id="proProfession" placeholder="Médecin traitant, cardiologue…">
+          </div>
+          <div class="field full">
+            <label for="proCoordonnees">Coordonnées</label>
+            <input type="text" id="proCoordonnees" placeholder="Adresse, téléphone, e-mail…" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label for="proNotes">Notes / Complément</label>
+            <textarea id="proNotes" placeholder="Informations complémentaires…" style="min-height:84px;"></textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="pro-modal-foot">
       <button type="button" id="btnFermerModalPro" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
       <button type="button" id="btnEnregistrerProSante" class="btn-id btn-id-v"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Enregistrer</button>
     </div>
@@ -1055,13 +1113,13 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
 </div>
 
 <!-- Menu contextuel / Roue dentée (Modale de gestion d'un pro spécifique) -->
-<div class="modal-overlay" id="modalActionsPro" style="display:none; z-index:9999;">
-  <div class="modal" style="max-width: 400px; text-align: center;">
-    <h3>Gérer ce professionnel</h3>
-    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+<div class="modal-overlay" id="modalActionsPro" style="display:none; z-index:10020;" role="dialog" aria-modal="true" aria-labelledby="titreActionsPro">
+  <div class="modal">
+    <h3 id="titreActionsPro"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg> Gérer ce professionnel</h3>
+    <div class="pro-action-list">
       <button type="button" id="btnActionCompleter" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg> Compléter / Modifier la fiche</button>
       <button type="button" id="btnActionSupprimer" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg> Supprimer ce professionnel</button>
-      <button type="button" onclick="document.getElementById('modalActionsPro').style.display='none'" class="btn-id" style="margin-top: 10px;">Fermer</button>
+      <button type="button" onclick="document.getElementById('modalActionsPro').style.display='none'" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Fermer</button>
     </div>
   </div>
 </div>
@@ -7119,14 +7177,17 @@ if (btnRechercheFHIR) {
 // RECHERCHE AVEC LA TOUCHE ENTRÉE
 // ------------------------------------------------------------
 
-document.getElementById("searchProApi")
-  .addEventListener("keydown", event => {
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      document.getElementById("btnExecuterRechercheFHIR").click();
-    }
-  });
+["searchProFamily", "searchProGiven"].forEach(id => {
+  const champ = document.getElementById(id);
+  if (champ) {
+    champ.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById("btnExecuterRechercheFHIR")?.click();
+      }
+    });
+  }
+});
 
 
 // ------------------------------------------------------------
