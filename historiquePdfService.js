@@ -149,7 +149,7 @@ function chargerLogoPourPdf() {
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = "https://junior2704.github.io/GestUrg2/logo.png";
+    img.src = "https://GestUrg2.github.io/app/logo.png";
   });
 }
 
