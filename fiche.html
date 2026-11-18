@@ -972,15 +972,84 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <div class="card-sec">
       <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg> Suivi et vigilances</div>
       <div class="form-grid">
-        <div class="field full">
-          <label for="medtraitant"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>Médecin(s) traitant(s)</label>
+       <div class="card-sec">
+  <div class="card-title">
+    <svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> 
+    Professionnels de santé & Médecin(s) traitant(s)
+    <button type="button" id="btnOuvrirModalProSante" class="btn-id btn-id-v push" style="min-height: 36px; padding: 0 12px; font-size: 13px;">
+      <svg class="i sm" aria-hidden="true"><use href="#i-plus"/></svg> Ajouter un pro de santé
+    </button>
+  </div>
 
-          <!-- faux champs anti-autofill -->
-          <input type="text" name="fake_user" autocomplete="username" tabindex="-1" style="position:absolute; left:-9999px; opacity:0;">
-          <input type="password" name="fake_pass" autocomplete="new-password" tabindex="-1" style="position:absolute; left:-9999px; opacity:0;">
+  <!-- Conteneur pour l'affichage propre des professionnels de santé -->
+  <div id="listeProSanteContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+    <!-- Les cartes des professionnels s'afficheront ici dynamiquement -->
+  </div>
 
-          <textarea id="medtraitant" name="medtraitant_x82k" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');"></textarea>
-        </div>
+  <!-- Stockage texte brut (gardé pour la compatibilité avec vos autres scripts) -->
+  <div class="field full" style="display:none;">
+    <label for="medtraitant">Données brutes (texte)</label>
+    <textarea id="medtraitant" name="medtraitant_x82k" autocomplete="off"></textarea>
+  </div>
+</div>
+
+<!-- Modal d'ajout / recherche de praticien via l'API e-Santé FHIR -->
+<div class="modal-overlay" id="modalProSante" style="display:none; z-index:9999;">
+  <div class="modal" style="max-width: 650px;">
+    <h3><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Rechercher un praticien (Annuaire e-Santé)</h3>
+    
+    <div class="field" style="margin-bottom: 14px;">
+      <label for="searchProApi">Rechercher par nom ou spécialité (API FHIR)</label>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="searchProApi" placeholder="Ex: Dupont, Cardiologue, Paris..." autocomplete="off" />
+        <button type="button" id="btnExecuterRechercheFHIR" class="btn-id btn-id-v">Rechercher</button>
+      </div>
+    </div>
+
+    <div id="resultatsRechercheFHIR" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; display: none; margin-bottom: 14px; background: #fff;">
+      <!-- Résultats de l'API -->
+    </div>
+
+    <hr style="margin: 14px 0;">
+
+    <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Ou saisir / modifier manuellement la fiche</h4>
+    <div class="form-grid">
+      <div class="field">
+        <label for="proNom">Nom & Prénom</label>
+        <input type="text" id="proNom" placeholder="Dr Jean Dupont" />
+      </div>
+      <div class="field">
+        <label for="proProfession">Profession / Spécialité</label>
+        <input type="text" id="proProfession" placeholder="Médecin traitant / Cardiologue" />
+      </div>
+      <div class="field full">
+        <label for="proCoordonnees">Coordonnées (Adresse, Téléphone, Email)</label>
+        <input type="text" id="proCoordonnees" placeholder="10 rue de la Paix, Paris - 0102030405" />
+      </div>
+      <div class="field full">
+        <label for="proNotes">Notes / Complément</label>
+        <textarea id="proNotes" placeholder="Informations complémentaires..." style="min-height: 70px;"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" id="btnFermerModalPro" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button type="button" id="btnEnregistrerProSante" class="btn-id btn-id-v"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Menu contextuel / Roue dentée (Modale de gestion d'un pro spécifique) -->
+<div class="modal-overlay" id="modalActionsPro" style="display:none; z-index:9999;">
+  <div class="modal" style="max-width: 400px; text-align: center;">
+    <h3>Gérer ce professionnel</h3>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+      <button type="button" id="btnActionCompleter" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg> Compléter / Modifier la fiche</button>
+      <button type="button" id="btnActionSupprimer" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg> Supprimer ce professionnel</button>
+      <button type="button" onclick="document.getElementById('modalActionsPro').style.display='none'" class="btn-id" style="margin-top: 10px;">Fermer</button>
+    </div>
+  </div>
+</div>
 
         <div class="field">
           <label for="vigilances"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Vigilance(s)</label>
@@ -6659,6 +6728,189 @@ async function marquerExamenLu(index) {
     ex.luPar = [...(ex.luPar || []), monUid];
   } catch (e) { console.warn("marquerExamenLu :", e); }
 }
+// --- GESTION DES PROFESSIONNELS DE SANTÉ VIA API FHIR ROR ---
+let listeProsData = [];
+let indexProEnCoursEdition = null;
+
+// Ouvrir la modale d'ajout
+document.getElementById("btnOuvrirModalProSante").addEventListener("click", () => {
+  indexProEnCoursEdition = null;
+  document.getElementById("proNom").value = "";
+  document.getElementById("proProfession").value = "";
+  document.getElementById("proCoordonnees").value = "";
+  document.getElementById("proNotes").value = "";
+  document.getElementById("searchProApi").value = "";
+  document.getElementById("resultatsRechercheFHIR").style.display = "none";
+  document.getElementById("modalProSante").style.display = "flex";
+});
+
+document.getElementById("btnFermerModalPro").addEventListener("click", () => {
+  document.getElementById("modalProSante").style.display = "none";
+});
+
+// Appel à l'API FHIR de l'e-Santé
+document.getElementById("btnExecuterRechercheFHIR").addEventListener("click", async () => {
+  const queryVal = document.getElementById("searchProApi").value.trim();
+  const resDiv = document.getElementById("resultatsRechercheFHIR");
+  
+  if (queryVal.length < 2) {
+    afficherBulle("Veuillez saisir au moins 2 caractères", "warning");
+    return;
+  }
+
+  resDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--muted);">Recherche en cours sur l'annuaire santé...</div>`;
+  resDiv.style.display = "block";
+
+  try {
+    // URL de l'API FHIR e-Santé (Practitioner / PractitionerRole)
+    // Note : si vous utilisez une clé API, ajoutez les en-têtes d'autorisation nécessaires (ex: headers: { 'Authorization': 'Bearer ' + votreCle })
+    const urlAPI = `https://gateway.api.esante.gouv.fr/fhir/Practitioner?name=${encodeURIComponent(queryVal)}`;
+    
+    const response = await fetch(urlAPI, {
+      headers: {
+        "Accept": "application/fhir+json"
+        // "Authorization": "Bearer VOTRE_CLE_API" // Décommentez si besoin d'utiliser votre clé
+      }
+    });
+
+    if (!response.ok) throw new Error("Erreur lors de la requête API FHIR");
+
+    const data = await response.json();
+    const entries = data.entry || [];
+
+    resDiv.innerHTML = "";
+    if (entries.length === 0) {
+      resDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--muted);">Aucun praticien trouvé.</div>`;
+      return;
+    }
+
+    entries.forEach(entry => {
+      const resource = entry.resource || {};
+      const nameObj = (resource.name && resource.name[0]) || {};
+      const nom = `${nameObj.family || ""} ${(nameObj.given || []).join(" ")}`.trim();
+      
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 10px 12px; border-bottom: 1px solid var(--line-soft); cursor: pointer; font-size: 14px;";
+      div.innerHTML = `<strong>Dr ${nom || "Nom non renseigné"}</strong>`;
+      
+      div.onclick = () => {
+        document.getElementById("proNom").value = `Dr ${nom}`;
+        document.getElementById("proProfession").value = "Médecin / Praticien";
+        resDiv.style.display = "none";
+      };
+      
+      resDiv.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error("Erreur API e-Santé:", err);
+    resDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--late);">Erreur de connexion à l'API FHIR (Vérifiez votre clé ou l'accès réseau).</div>`;
+  }
+});
+
+// Enregistrer / Ajouter un pro de santé
+document.getElementById("btnEnregistrerProSante").addEventListener("click", async () => {
+  const nom = document.getElementById("proNom").value.trim();
+  const profession = document.getElementById("proProfession").value.trim();
+  const coordonnees = document.getElementById("proCoordonnees").value.trim();
+  const notes = document.getElementById("proNotes").value.trim();
+
+  if (!nom) {
+    afficherBulle("Le nom du professionnel est obligatoire", "warning");
+    return;
+  }
+
+  const nouveauPro = { nom, profession, coordonnees, notes };
+
+  if (indexProEnCoursEdition !== null) {
+    listeProsData[indexProEnCoursEdition] = nouveauPro;
+  } else {
+    listeProsData.push(nouveauPro);
+  }
+
+  document.getElementById("modalProSante").style.display = "none";
+  mettreAJourAffichageEtTexteBrut();
+});
+
+// Synchronisation et affichage "joli" + format texte brut pour sauvegarde
+function mettreAJourAffichageEtTexteBrut() {
+  const container = document.getElementById("listeProSanteContainer");
+  container.innerHTML = "";
+
+  if (listeProsData.length === 0) {
+    container.innerHTML = `<div style="font-size: 14px; color: var(--muted); font-style: italic; padding: 6px 0;">Aucun professionnel de santé enregistré.</div>`;
+    document.getElementById("medtraitant").value = "";
+    document.getElementById("medtraitant").dispatchEvent(new Event("change"));
+    return;
+  }
+
+  let texteBrutGlobal = "";
+
+  listeProsData.forEach((pro, index) => {
+    // Construction du format texte brut (pour lecture ailleurs et affichage brut)
+    texteBrutGlobal += `--- Pro ${index + 1} ---\nNom: ${pro.nom}\nProfession: ${pro.profession}\nCoordonnées: ${pro.coordonnees}\nNotes: ${pro.notes}\n\n`;
+
+    // Affichage "joli" avec carte et roue dentée
+    const card = document.createElement("div");
+    card.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--field); border: 1px solid var(--line); border-radius: 12px;";
+    
+    card.innerHTML = `
+      <div>
+        <strong style="font-size: 15px; color: var(--ink);">${pro.nom}</strong>
+        <div style="font-size: 13px; color: var(--muted);">${pro.profession || "Profession non spécifiée"}</div>
+        ${pro.coordonnees ? `<div style="font-size: 13px; color: var(--ink); margin-top: 2px;">📞 ${pro.coordonnees}</div>` : ""}
+        ${pro.notes ? `<div style="font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px;">Note: ${pro.notes}</div>` : ""}
+      </div>
+      <button type="button" class="icon-button gear-btn" data-index="${index}" aria-label="Gérer ce professionnel" style="width: 38px; height: 38px; border-radius: 10px;">
+        <svg class="i sm" aria-hidden="true"><use href="#i-sliders"/></svg>
+      </button>
+    `;
+
+    container.appendChild(card);
+  });
+
+  // Mettre à jour le textarea caché/brut pour persister dans Firestore
+  const champMed = document.getElementById("medtraitant");
+  champMed.value = texteBrutGlobal.trim();
+  champMed.dispatchEvent(new Event("change"));
+
+  // Attacher les écouteurs sur les roues dentées
+  document.querySelectorAll(".gear-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const idx = parseInt(e.currentTarget.getAttribute("data-index"), 10);
+      ouvrirActionsPro(idx);
+    });
+  });
+}
+
+function ouvrirActionsPro(index) {
+  indexProEnCoursEdition = index;
+  const modalActions = document.getElementById("modalActionsPro");
+  modalActions.style.display = "flex";
+
+  document.getElementById("btnActionCompleter").onclick = () => {
+    modalActions.style.display = "none";
+    const pro = listeProsData[index];
+    document.getElementById("proNom").value = pro.nom;
+    document.getElementById("proProfession").value = pro.profession;
+    document.getElementById("proCoordonnees").value = pro.coordonnees;
+    document.getElementById("proNotes").value = pro.notes;
+    document.getElementById("modalProSante").style.display = "flex";
+  };
+
+  document.getElementById("btnActionSupprimer").onclick = () => {
+    modalActions.style.display = "none";
+    if (confirm("Voulez-vous supprimer ce professionnel de santé ?")) {
+      listeProsData.splice(index, 1);
+      mettreAJourAffichageEtTexteBrut();
+      afficherBulle("Professionnel supprimé", "success");
+    }
+  };
+}
+
+// Initialisation au chargement du patient existant (conversion du texte brut en cartes si des données existent déjà)
+const originalChargerPatient = window.chargerPatient || function(){};
+// Au chargement, si un texte brut existe dans "medtraitant", on peut parser ou l'initialiser proprement.
 </script>
 
 </body>
