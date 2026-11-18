@@ -999,9 +999,23 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <h3><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Rechercher un praticien (Annuaire e-Santé)</h3>
     
     <div class="field" style="margin-bottom: 14px;">
-      <label for="searchProApi">Rechercher par nom ou spécialité (API FHIR)</label>
-      <div style="display: flex; gap: 8px;">
-        <input type="text" id="searchProApi" placeholder="Ex: Dupont, Cardiologue, Paris..." autocomplete="off" />
+   <div class="field">
+  <label for="searchProFamily">Nom</label>
+  <input
+    type="text"
+    id="searchProFamily"
+    placeholder="Ex. : MBAPPE"
+  >
+</div>
+
+<div class="field">
+  <label for="searchProGiven">Prénom</label>
+  <input
+    type="text"
+    id="searchProGiven"
+    placeholder="Ex. : Kylian"
+  >
+</div>
         <button type="button" id="btnExecuterRechercheFHIR" class="btn-id btn-id-v">Rechercher</button>
       </div>
     </div>
@@ -6831,21 +6845,24 @@ document.getElementById("btnFermerModalPro")
 document.getElementById("btnExecuterRechercheFHIR")
   .addEventListener("click", async () => {
 
-    const queryVal = document
-      .getElementById("searchProApi")
-      .value
-      .trim();
+   const family = document
+  .getElementById("searchProFamily")
+  .value.trim();
 
-    const resDiv = document.getElementById("resultatsRechercheFHIR");
-    const btnRecherche = document.getElementById("btnExecuterRechercheFHIR");
+const given = document
+  .getElementById("searchProGiven")
+  .value.trim();
 
-    if (queryVal.length < 2) {
-      afficherBulle(
-        "Veuillez saisir au moins 2 caractères.",
-        "warning"
-      );
-      return;
-    }
+const resDiv = document.getElementById("resultatsRechercheFHIR");
+const btnRecherche = document.getElementById("btnExecuterRechercheFHIR");
+
+if (family.length < 2 || given.length < 2) {
+  afficherBulle(
+    "Veuillez renseigner le nom et le prénom.",
+    "warning"
+  );
+  return;
+}
 
     // Vérification de la connexion Firebase
     const user = window.auth?.currentUser;
