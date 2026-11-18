@@ -505,6 +505,8 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
         <th>Administration des avis</th>
         <th>Administration des consultations</th>
         <th>Calendrier</th>
+                <th>Créer des réunions</th>
+
         <th>Accueil Consultations</th>
         <th>Fcihe Consultation</th>
         <th>Gestion des affectations</th>
@@ -1401,6 +1403,7 @@ tr.innerHTML = `
     <td><input type="checkbox" ${pages.adminavis ? "checked" : ""} onchange="toggleAccess('${id}', 'adminavis', this.checked)"></td>
         <td><input type="checkbox" ${pages.rdvadmin ? "checked" : ""} onchange="toggleAccess('${id}', 'rdvadmin', this.checked)"></td>
         <td><input type="checkbox" ${pages.Calendrier ? "checked" : ""} onchange="toggleAccess('${id}', 'Calendrier', this.checked)"></td>
+        <td><input type="checkbox" ${pages.creerRDV ? "checked" : ""} onchange="toggleAccess('${id}', 'creerRDV', this.checked)"></td>
                 <td><input type="checkbox" ${pages.accueilconsultations ? "checked" : ""} onchange="toggleAccess('${id}', 'accueilconsultations', this.checked)"></td>
 
     <td><input type="checkbox" ${pages.ficheconsultation ? "checked" : ""} onchange="toggleAccess('${id}', 'ficheconsultation', this.checked)"></td>
