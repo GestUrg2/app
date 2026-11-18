@@ -6728,190 +6728,571 @@ async function marquerExamenLu(index) {
     ex.luPar = [...(ex.luPar || []), monUid];
   } catch (e) { console.warn("marquerExamenLu :", e); }
 }
-// --- GESTION DES PROFESSIONNELS DE SANTÉ VIA API FHIR ROR ---
+
+// ============================================================
+// GESTION DES PROFESSIONNELS DE SANTÉ
+// Recherche via le serveur, qui interroge l'API FHIR de l'ANS
+// ============================================================
+
 let listeProsData = [];
 let indexProEnCoursEdition = null;
 
-// Ouvrir la modale d'ajout
-document.getElementById("btnOuvrirModalProSante").addEventListener("click", () => {
-  indexProEnCoursEdition = null;
-  document.getElementById("proNom").value = "";
-  document.getElementById("proProfession").value = "";
-  document.getElementById("proCoordonnees").value = "";
-  document.getElementById("proNotes").value = "";
-  document.getElementById("searchProApi").value = "";
-  document.getElementById("resultatsRechercheFHIR").style.display = "none";
-  document.getElementById("modalProSante").style.display = "flex";
-});
+const URL_RECHERCHE_PRO =
+    "https://gesturg2-server.onrender.com/api/esante/practitioners";
 
-document.getElementById("btnFermerModalPro").addEventListener("click", () => {
-  document.getElementById("modalProSante").style.display = "none";
-});
 
-// Appel à l'API FHIR de l'e-Santé
-document.getElementById("btnExecuterRechercheFHIR").addEventListener("click", async () => {
-  const queryVal = document.getElementById("searchProApi").value.trim();
+// ------------------------------------------------------------
+// OUTILS D'AFFICHAGE
+// ------------------------------------------------------------
+
+function afficherMessageRechercheFHIR(message, couleur = "muted") {
   const resDiv = document.getElementById("resultatsRechercheFHIR");
-  
-  if (queryVal.length < 2) {
-    afficherBulle("Veuillez saisir au moins 2 caractères", "warning");
-    return;
+  resDiv.replaceChildren();
+
+  const messageDiv = document.createElement("div");
+  messageDiv.style.cssText =
+    "padding:12px;text-align:center;color:var(--" + couleur + ");";
+  messageDiv.textContent = message;
+
+  resDiv.appendChild(messageDiv);
+  resDiv.style.display = "block";
+}
+
+
+function obtenirNomPraticien(resource) {
+  const nameObj = resource?.name?.[0] || {};
+
+  const nom = nameObj.family || "";
+  const prenoms = Array.isArray(nameObj.given)
+    ? nameObj.given.join(" ")
+    : "";
+
+  return `${nom} ${prenoms}`.trim();
+}
+
+
+function obtenirProfessionPraticien(resource) {
+  const qualifications = Array.isArray(resource?.qualification)
+    ? resource.qualification
+    : [];
+
+  for (const qualification of qualifications) {
+    if (qualification.code?.text) {
+      return qualification.code.text;
+    }
+
+    const coding = qualification.code?.coding || [];
+    const display = coding.find(item => item.display)?.display;
+
+    if (display) return display;
   }
 
-  resDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--muted);">Recherche en cours sur l'annuaire santé...</div>`;
-  resDiv.style.display = "block";
+  return "Profession non renseignée";
+}
 
-  try {
-    // URL de l'API FHIR e-Santé (Practitioner / PractitionerRole)
-    // Note : si vous utilisez une clé API, ajoutez les en-têtes d'autorisation nécessaires (ex: headers: { 'Authorization': 'Bearer ' + votreCle })
-    const urlAPI = `https://gateway.api.esante.gouv.fr/fhir/Practitioner?name=${encodeURIComponent(queryVal)}`;
-    
-    const response = await fetch(urlAPI, {
-      headers: {
-        "Accept": "application/fhir+json",
-        "ESANTE-API-KEY": "35ef8ac4-6e60-40cb-af8a-c46e6090cbf4"
-  
-      }
-    });
 
-    if (!response.ok) throw new Error("Erreur lors de la requête API FHIR");
+// ------------------------------------------------------------
+// OUVERTURE DE LA MODALE D'AJOUT
+// ------------------------------------------------------------
 
-    const data = await response.json();
-    const entries = data.entry || [];
+document.getElementById("btnOuvrirModalProSante")
+  .addEventListener("click", () => {
 
-    resDiv.innerHTML = "";
-    if (entries.length === 0) {
-      resDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--muted);">Aucun praticien trouvé.</div>`;
+    indexProEnCoursEdition = null;
+
+    document.getElementById("proNom").value = "";
+    document.getElementById("proProfession").value = "";
+    document.getElementById("proCoordonnees").value = "";
+    document.getElementById("proNotes").value = "";
+    document.getElementById("searchProApi").value = "";
+
+    const resDiv = document.getElementById("resultatsRechercheFHIR");
+    resDiv.replaceChildren();
+    resDiv.style.display = "none";
+
+    document.getElementById("modalProSante").style.display = "flex";
+  });
+
+
+// ------------------------------------------------------------
+// FERMETURE DE LA MODALE
+// ------------------------------------------------------------
+
+document.getElementById("btnFermerModalPro")
+  .addEventListener("click", () => {
+    document.getElementById("modalProSante").style.display = "none";
+  });
+
+
+// ------------------------------------------------------------
+// RECHERCHE DANS L'ANNUAIRE SANTÉ
+// ------------------------------------------------------------
+
+document.getElementById("btnExecuterRechercheFHIR")
+  .addEventListener("click", async () => {
+
+    const queryVal = document
+      .getElementById("searchProApi")
+      .value
+      .trim();
+
+    const resDiv = document.getElementById("resultatsRechercheFHIR");
+    const btnRecherche = document.getElementById("btnExecuterRechercheFHIR");
+
+    if (queryVal.length < 2) {
+      afficherBulle(
+        "Veuillez saisir au moins 2 caractères.",
+        "warning"
+      );
       return;
     }
 
-    entries.forEach(entry => {
-      const resource = entry.resource || {};
-      const nameObj = (resource.name && resource.name[0]) || {};
-      const nom = `${nameObj.family || ""} ${(nameObj.given || []).join(" ")}`.trim();
-      
-      const div = document.createElement("div");
-      div.style.cssText = "padding: 10px 12px; border-bottom: 1px solid var(--line-soft); cursor: pointer; font-size: 14px;";
-      div.innerHTML = `<strong>Dr ${nom || "Nom non renseigné"}</strong>`;
-      
-      div.onclick = () => {
-        document.getElementById("proNom").value = `Dr ${nom}`;
-        document.getElementById("proProfession").value = "Médecin / Praticien";
-        resDiv.style.display = "none";
-      };
-      
-      resDiv.appendChild(div);
-    });
+    btnRecherche.disabled = true;
+    btnRecherche.textContent = "Recherche...";
 
-  } catch (err) {
-    console.error("Erreur API e-Santé:", err);
-    resDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--late);">Erreur de connexion à l'API FHIR (Vérifiez votre clé ou l'accès réseau).</div>`;
-  }
-});
+    afficherMessageRechercheFHIR(
+      "Recherche en cours dans l'annuaire santé..."
+    );
 
-// Enregistrer / Ajouter un pro de santé
-document.getElementById("btnEnregistrerProSante").addEventListener("click", async () => {
-  const nom = document.getElementById("proNom").value.trim();
-  const profession = document.getElementById("proProfession").value.trim();
-  const coordonnees = document.getElementById("proCoordonnees").value.trim();
-  const notes = document.getElementById("proNotes").value.trim();
+    try {
 
-  if (!nom) {
-    afficherBulle("Le nom du professionnel est obligatoire", "warning");
-    return;
-  }
+      // Le serveur reçoit le texte recherché.
+      // Il doit transmettre ce texte à l'API FHIR avec le paramètre name.
+      const params = new URLSearchParams({
+        name: queryVal
+      });
 
-  const nouveauPro = { nom, profession, coordonnees, notes };
+   const response = await fetch(
+    `${URL_RECHERCHE_PRO}?name=${encodeURIComponent(queryVal)}`,
+    {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${idToken}`
+        }
+    }
+);
 
-  if (indexProEnCoursEdition !== null) {
-    listeProsData[indexProEnCoursEdition] = nouveauPro;
-  } else {
-    listeProsData.push(nouveauPro);
-  }
+      // Lecture de la réponse
+      const data = await response.json().catch(() => null);
 
-  document.getElementById("modalProSante").style.display = "none";
-  mettreAJourAffichageEtTexteBrut();
-});
+      // Gestion des erreurs HTTP
+      if (!response.ok) {
+        const diagnostic =
+          data?.issue?.[0]?.diagnostics ||
+          data?.message ||
+          `Erreur HTTP ${response.status}`;
 
-// Synchronisation et affichage "joli" + format texte brut pour sauvegarde
+        throw new Error(diagnostic);
+      }
+
+      // Vérification du format FHIR
+      if (!data || data.resourceType !== "Bundle") {
+        const diagnostic =
+          data?.issue?.[0]?.diagnostics ||
+          "L'API a renvoyé une réponse inattendue.";
+
+        throw new Error(diagnostic);
+      }
+
+      const entries = Array.isArray(data.entry)
+        ? data.entry
+        : [];
+
+      resDiv.replaceChildren();
+
+      // Aucun résultat
+      if (entries.length === 0) {
+        afficherMessageRechercheFHIR(
+          "Aucun praticien correspondant à cette recherche."
+        );
+        return;
+      }
+
+      // Affichage des praticiens
+      entries.forEach(entry => {
+
+        const resource = entry.resource || {};
+
+        const nom = obtenirNomPraticien(resource);
+        const profession = obtenirProfessionPraticien(resource);
+
+        const identifiant =
+          resource.identifier?.find(item => item.value)?.value || "";
+
+        const nomAffiche = nom || "Nom non renseigné";
+
+        const div = document.createElement("div");
+
+        div.style.cssText = `
+          padding: 12px;
+          border-bottom: 1px solid var(--line-soft);
+          cursor: pointer;
+          font-size: 14px;
+          transition: background 0.2s;
+        `;
+
+        const titre = document.createElement("strong");
+        titre.textContent = nomAffiche;
+
+        const sousTitre = document.createElement("div");
+        sousTitre.style.cssText =
+          "font-size:13px;color:var(--muted);margin-top:3px;";
+        sousTitre.textContent = profession;
+
+        div.appendChild(titre);
+        div.appendChild(sousTitre);
+
+        if (identifiant) {
+          const identifiantDiv = document.createElement("div");
+          identifiantDiv.style.cssText =
+            "font-size:12px;color:var(--muted);margin-top:3px;";
+          identifiantDiv.textContent =
+            "Identifiant : " + identifiant;
+
+          div.appendChild(identifiantDiv);
+        }
+
+        div.addEventListener("mouseenter", () => {
+          div.style.background = "var(--field)";
+        });
+
+        div.addEventListener("mouseleave", () => {
+          div.style.background = "transparent";
+        });
+
+        // Sélection du praticien
+        div.addEventListener("click", () => {
+
+          document.getElementById("proNom").value =
+            nom ? nom : "";
+
+          document.getElementById("proProfession").value =
+            profession !== "Profession non renseignée"
+              ? profession
+              : "";
+
+          // On conserve les coordonnées saisies manuellement.
+          // Elles ne sont pas remplacées par des données absentes.
+
+          resDiv.style.display = "none";
+
+          afficherBulle(
+            "Praticien sélectionné. Vous pouvez compléter sa fiche.",
+            "success"
+          );
+        });
+
+        resDiv.appendChild(div);
+      });
+
+      // Indication du nombre de résultats
+      const compteur = document.createElement("div");
+      compteur.style.cssText = `
+        padding: 9px 12px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+        background: var(--field);
+      `;
+
+      compteur.textContent =
+        `${entries.length} résultat(s) trouvé(s)`;
+
+      resDiv.appendChild(compteur);
+
+    } catch (err) {
+
+      console.error("Erreur recherche API e-Santé :", err);
+
+      afficherMessageRechercheFHIR(
+        "La recherche n'a pas pu aboutir : " +
+        (err.message || "Erreur inconnue."),
+        "late"
+      );
+
+    } finally {
+
+      btnRecherche.disabled = false;
+      btnRecherche.textContent = "Rechercher";
+    }
+  });
+
+
+// ------------------------------------------------------------
+// RECHERCHE AVEC LA TOUCHE ENTRÉE
+// ------------------------------------------------------------
+
+document.getElementById("searchProApi")
+  .addEventListener("keydown", event => {
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("btnExecuterRechercheFHIR").click();
+    }
+  });
+
+
+// ------------------------------------------------------------
+// ENREGISTRER / AJOUTER UN PROFESSIONNEL
+// ------------------------------------------------------------
+
+document.getElementById("btnEnregistrerProSante")
+  .addEventListener("click", async () => {
+
+    const nom = document.getElementById("proNom").value.trim();
+    const profession = document.getElementById("proProfession").value.trim();
+    const coordonnees = document.getElementById("proCoordonnees").value.trim();
+    const notes = document.getElementById("proNotes").value.trim();
+
+    if (!nom) {
+      afficherBulle(
+        "Le nom du professionnel est obligatoire.",
+        "warning"
+      );
+      return;
+    }
+
+    const nouveauPro = {
+      nom,
+      profession,
+      coordonnees,
+      notes
+    };
+
+    if (
+      indexProEnCoursEdition !== null &&
+      indexProEnCoursEdition >= 0 &&
+      indexProEnCoursEdition < listeProsData.length
+    ) {
+      listeProsData[indexProEnCoursEdition] = nouveauPro;
+    } else {
+      listeProsData.push(nouveauPro);
+    }
+
+    indexProEnCoursEdition = null;
+
+    document.getElementById("modalProSante").style.display = "none";
+
+    mettreAJourAffichageEtTexteBrut();
+
+    afficherBulle(
+      "Professionnel de santé enregistré.",
+      "success"
+    );
+  });
+
+
+// ------------------------------------------------------------
+// SYNCHRONISATION ET AFFICHAGE DES PROFESSIONNELS
+// ------------------------------------------------------------
+
 function mettreAJourAffichageEtTexteBrut() {
+
   const container = document.getElementById("listeProSanteContainer");
-  container.innerHTML = "";
+
+  container.replaceChildren();
+
+  const champMed = document.getElementById("medtraitant");
 
   if (listeProsData.length === 0) {
-    container.innerHTML = `<div style="font-size: 14px; color: var(--muted); font-style: italic; padding: 6px 0;">Aucun professionnel de santé enregistré.</div>`;
-    document.getElementById("medtraitant").value = "";
-    document.getElementById("medtraitant").dispatchEvent(new Event("change"));
+
+    const message = document.createElement("div");
+
+    message.style.cssText = `
+      font-size:14px;
+      color:var(--muted);
+      font-style:italic;
+      padding:6px 0;
+    `;
+
+    message.textContent =
+      "Aucun professionnel de santé enregistré.";
+
+    container.appendChild(message);
+
+    champMed.value = "";
+    champMed.dispatchEvent(new Event("change"));
+
     return;
   }
 
   let texteBrutGlobal = "";
 
   listeProsData.forEach((pro, index) => {
-    // Construction du format texte brut (pour lecture ailleurs et affichage brut)
-    texteBrutGlobal += `--- Pro ${index + 1} ---\nNom: ${pro.nom}\nProfession: ${pro.profession}\nCoordonnées: ${pro.coordonnees}\nNotes: ${pro.notes}\n\n`;
 
-    // Affichage "joli" avec carte et roue dentée
+    // Construction du texte brut pour la sauvegarde
+    texteBrutGlobal +=
+      `--- Pro ${index + 1} ---\n` +
+      `Nom: ${pro.nom || ""}\n` +
+      `Profession: ${pro.profession || ""}\n` +
+      `Coordonnées: ${pro.coordonnees || ""}\n` +
+      `Notes: ${pro.notes || ""}\n\n`;
+
+    // Création de la carte
     const card = document.createElement("div");
-    card.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--field); border: 1px solid var(--line); border-radius: 12px;";
-    
-    card.innerHTML = `
-      <div>
-        <strong style="font-size: 15px; color: var(--ink);">${pro.nom}</strong>
-        <div style="font-size: 13px; color: var(--muted);">${pro.profession || "Profession non spécifiée"}</div>
-        ${pro.coordonnees ? `<div style="font-size: 13px; color: var(--ink); margin-top: 2px;">📞 ${pro.coordonnees}</div>` : ""}
-        ${pro.notes ? `<div style="font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px;">Note: ${pro.notes}</div>` : ""}
-      </div>
-      <button type="button" class="icon-button gear-btn" data-index="${index}" aria-label="Gérer ce professionnel" style="width: 38px; height: 38px; border-radius: 10px;">
-        <svg class="i sm" aria-hidden="true"><use href="#i-sliders"/></svg>
-      </button>
+
+    card.style.cssText = `
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      background:var(--field);
+      border:1px solid var(--line);
+      border-radius:12px;
     `;
+
+    const infos = document.createElement("div");
+    infos.style.cssText = "min-width:0;flex:1;";
+
+    const titre = document.createElement("strong");
+    titre.style.cssText =
+      "font-size:15px;color:var(--ink);display:block;";
+    titre.textContent = pro.nom || "";
+
+    const profession = document.createElement("div");
+    profession.style.cssText =
+      "font-size:13px;color:var(--muted);";
+    profession.textContent =
+      pro.profession || "Profession non spécifiée";
+
+    infos.appendChild(titre);
+    infos.appendChild(profession);
+
+    if (pro.coordonnees) {
+      const coordonnees = document.createElement("div");
+      coordonnees.style.cssText =
+        "font-size:13px;color:var(--ink);margin-top:2px;";
+      coordonnees.textContent = "Coordonnées : " + pro.coordonnees;
+      infos.appendChild(coordonnees);
+    }
+
+    if (pro.notes) {
+      const notes = document.createElement("div");
+      notes.style.cssText = `
+        font-size:12px;
+        color:var(--muted);
+        font-style:italic;
+        margin-top:3px;
+      `;
+      notes.textContent = "Note : " + pro.notes;
+      infos.appendChild(notes);
+    }
+
+    // Bouton de gestion
+    const btnGestion = document.createElement("button");
+
+    btnGestion.type = "button";
+    btnGestion.className = "icon-button gear-btn";
+    btnGestion.setAttribute(
+      "aria-label",
+      "Gérer ce professionnel"
+    );
+
+    btnGestion.style.cssText = `
+      width:38px;
+      height:38px;
+      min-width:38px;
+      border-radius:10px;
+    `;
+
+    btnGestion.innerHTML =
+      '<svg class="i sm" aria-hidden="true"><use href="#i-sliders"/></svg>';
+
+    btnGestion.addEventListener("click", () => {
+      ouvrirActionsPro(index);
+    });
+
+    card.appendChild(infos);
+    card.appendChild(btnGestion);
 
     container.appendChild(card);
   });
 
-  // Mettre à jour le textarea caché/brut pour persister dans Firestore
-  const champMed = document.getElementById("medtraitant");
+  // Mise à jour du champ historique utilisé par le reste de l'application
   champMed.value = texteBrutGlobal.trim();
-  champMed.dispatchEvent(new Event("change"));
 
-  // Attacher les écouteurs sur les roues dentées
-  document.querySelectorAll(".gear-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const idx = parseInt(e.currentTarget.getAttribute("data-index"), 10);
-      ouvrirActionsPro(idx);
-    });
-  });
+  champMed.dispatchEvent(new Event("change"));
 }
 
+
+// ------------------------------------------------------------
+// MODALE DES ACTIONS SUR UN PROFESSIONNEL
+// ------------------------------------------------------------
+
 function ouvrirActionsPro(index) {
+
+  if (
+    index < 0 ||
+    index >= listeProsData.length
+  ) {
+    return;
+  }
+
   indexProEnCoursEdition = index;
+
   const modalActions = document.getElementById("modalActionsPro");
+
   modalActions.style.display = "flex";
 
+  // MODIFIER
   document.getElementById("btnActionCompleter").onclick = () => {
+
+    const pro = listeProsData[indexProEnCoursEdition];
+
+    if (!pro) return;
+
     modalActions.style.display = "none";
-    const pro = listeProsData[index];
-    document.getElementById("proNom").value = pro.nom;
-    document.getElementById("proProfession").value = pro.profession;
-    document.getElementById("proCoordonnees").value = pro.coordonnees;
-    document.getElementById("proNotes").value = pro.notes;
+
+    document.getElementById("proNom").value = pro.nom || "";
+    document.getElementById("proProfession").value = pro.profession || "";
+    document.getElementById("proCoordonnees").value = pro.coordonnees || "";
+    document.getElementById("proNotes").value = pro.notes || "";
+
     document.getElementById("modalProSante").style.display = "flex";
   };
 
+
+  // SUPPRIMER
   document.getElementById("btnActionSupprimer").onclick = () => {
+
     modalActions.style.display = "none";
-    if (confirm("Voulez-vous supprimer ce professionnel de santé ?")) {
-      listeProsData.splice(index, 1);
-      mettreAJourAffichageEtTexteBrut();
-      afficherBulle("Professionnel supprimé", "success");
+
+    if (
+      !confirm(
+        "Voulez-vous supprimer ce professionnel de santé ?"
+      )
+    ) {
+      return;
     }
+
+    listeProsData.splice(indexProEnCoursEdition, 1);
+
+    indexProEnCoursEdition = null;
+
+    mettreAJourAffichageEtTexteBrut();
+
+    afficherBulle(
+      "Professionnel supprimé.",
+      "success"
+    );
   };
 }
 
-// Initialisation au chargement du patient existant (conversion du texte brut en cartes si des données existent déjà)
-const originalChargerPatient = window.chargerPatient || function(){};
-// Au chargement, si un texte brut existe dans "medtraitant", on peut parser ou l'initialiser proprement.
+
+// ------------------------------------------------------------
+// INITIALISATION
+// ------------------------------------------------------------
+
+// Cette ligne conserve la compatibilité avec le mécanisme
+// de chargement du patient déjà présent dans ton application.
+// Le parsing du champ medtraitant doit être effectué dans
+// ton code de chargement patient existant.
+
+const originalChargerPatient =
+  window.chargerPatient || function() {};
+
 </script>
 
 </body>
