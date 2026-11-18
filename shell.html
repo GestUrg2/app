@@ -4896,7 +4896,7 @@ function rendreRaccourcis() {
     if (p.aFaire) tags.push(`<span class="tg amber">${p.aFaire} ${pl(p.aFaire, "examen à réaliser", "examens à réaliser")}</span>`);
     if (p.sortie) tags.push(`<span class="tg green">Sortie enregistrée</span>`);
     const sub = [p.roles.map(r => ROLES[r]).join(" / "), p.pdc].filter(Boolean).join(" · ");
-    return `<button type="button" class="hw-item" data-title="${esc("Fiche Urgences " + p.prenom + " " + p.nom)}" data-url="fiche.html?id=${encodeURIComponent(p.id)}">`
+    return `<button type="button" class="hw-item" data-title="${esc("Fiche Urgences " + p.nom + " " + p.prenom)}" data-url="fiche.html?id=${encodeURIComponent(p.id)}">`
       + `<span class="hw-av">${esc(initiales(p))}${p.nonLus ? '<i class="pip"></i>' : ""}</span><span class="hw-tx"><b>${esc(nomPatient(p))}</b>`
       + (sub ? `<small>${esc(sub)}</small>` : "") + (tags.length ? `<span class="hw-tags">${tags.join("")}</span>` : "")
       + `</span>${ico("i-chevron", "i hw-go")}</button>`;
