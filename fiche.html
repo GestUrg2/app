@@ -6847,6 +6847,17 @@ document.getElementById("btnExecuterRechercheFHIR")
       return;
     }
 
+    // Vérification de la connexion Firebase
+    const user = window.auth?.currentUser;
+
+    if (!user) {
+      afficherBulle(
+        "Vous devez être connecté pour effectuer cette recherche.",
+        "warning"
+      );
+      return;
+    }
+
     btnRecherche.disabled = true;
     btnRecherche.textContent = "Recherche...";
 
@@ -6856,67 +6867,51 @@ document.getElementById("btnExecuterRechercheFHIR")
 
     try {
 
-      // Le serveur reçoit le texte recherché.
-      // Il doit transmettre ce texte à l'API FHIR avec le paramètre name.
+      // Récupération du jeton Firebase
+      const idToken = await user.getIdToken();
+
+      // Préparation des paramètres
       const params = new URLSearchParams({
         name: queryVal
       });
 
-  const user = window.auth?.currentUser;
-
-if (!user) {
-    afficherBulle("Vous devez être connecté pour effectuer cette recherche.", "warning");
-    return;
-}
-
-try {
-    const idToken = await user.getIdToken();
-
-    const response = await fetch(
-        `${URL_RECHERCHE_PRO}?name=${encodeURIComponent(queryVal)}`,
+      // Appel du serveur GestUrg2
+      const response = await fetch(
+        `${URL_RECHERCHE_PRO}?${params.toString()}`,
         {
-            method: "GET",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${idToken}`
-            }
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${idToken}`
+          }
         }
-    );
+      );
 
-    if (!response.ok) {
-        throw new Error(`Erreur serveur : ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Continuer ici avec le traitement des résultats FHIR
-} catch (error) {
-    console.error("Erreur recherche praticien :", error);
-    afficherBulle("La recherche n'a pas pu aboutir : " + error.message, "error");
-}
-
-      // Lecture de la réponse
+      // Lecture unique de la réponse
       const data = await response.json().catch(() => null);
 
       // Gestion des erreurs HTTP
       if (!response.ok) {
-        const diagnostic =
-          data?.issue?.[0]?.diagnostics ||
+        throw new Error(
+          data?.error ||
           data?.message ||
-          `Erreur HTTP ${response.status}`;
+          `Erreur HTTP ${response.status}`
+        );
+      }
 
-        throw new Error(diagnostic);
+      // Vérification de la réponse du serveur
+      if (!data || data.success !== true) {
+        throw new Error(
+          data?.error || "Réponse inattendue du serveur."
+        );
       }
 
       // Vérification du format FHIR
-      if (!data || data.resourceType !== "Bundle") {
-        const diagnostic =
-          data?.issue?.[0]?.diagnostics ||
-          "L'API a renvoyé une réponse inattendue.";
-
-        throw new Error(diagnostic);
+      if (data.resourceType && data.resourceType !== "Bundle") {
+        throw new Error("Format FHIR inattendu.");
       }
 
+      // Le serveur renvoie les entrées dans data.entry
       const entries = Array.isArray(data.entry)
         ? data.entry
         : [];
@@ -6987,15 +6982,12 @@ try {
         div.addEventListener("click", () => {
 
           document.getElementById("proNom").value =
-            nom ? nom : "";
+            nom || "";
 
           document.getElementById("proProfession").value =
             profession !== "Profession non renseignée"
               ? profession
               : "";
-
-          // On conserve les coordonnées saisies manuellement.
-          // Elles ne sont pas remplacées par des données absentes.
 
           resDiv.style.display = "none";
 
@@ -7008,8 +7000,9 @@ try {
         resDiv.appendChild(div);
       });
 
-      // Indication du nombre de résultats
+      // Nombre de résultats
       const compteur = document.createElement("div");
+
       compteur.style.cssText = `
         padding: 9px 12px;
         font-size: 12px;
