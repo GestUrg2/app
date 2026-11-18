@@ -1016,6 +1016,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     placeholder="Ex. : Jean"
   >
 </div>
+
         <button type="button" id="btnExecuterRechercheFHIR" class="btn-id btn-id-v">Rechercher</button>
       </div>
     
@@ -6841,30 +6842,43 @@ document.getElementById("btnFermerModalPro")
 
 
 // ------------------------------------------------------------
-// RECHERCHE DANS L'ANNUAIRE SANTÉ
+// RECHERCHE DANS L'ANNUAIRE SANTÉ e-SANTÉ
 // ------------------------------------------------------------
 
-document.getElementById("btnExecuterRechercheFHIR")
-  .addEventListener("click", async () => {
+const btnRechercheFHIR = document.getElementById("btnExecuterRechercheFHIR");
 
-   const family = document
-  .getElementById("searchProFamily")
-  .value.trim();
+if (btnRechercheFHIR) {
 
-const given = document
-  .getElementById("searchProGiven")
-  .value.trim();
+  btnRechercheFHIR.addEventListener("click", async () => {
 
-const resDiv = document.getElementById("resultatsRechercheFHIR");
-const btnRecherche = document.getElementById("btnExecuterRechercheFHIR");
+    // Récupération des champs de recherche
+    const champFamily = document.getElementById("searchProFamily");
+    const champGiven = document.getElementById("searchProGiven");
+    const resDiv = document.getElementById("resultatsRechercheFHIR");
 
-if (family.length < 2 || given.length < 2) {
-  afficherBulle(
-    "Veuillez renseigner le nom et le prénom.",
-    "warning"
-  );
-  return;
-}
+    // Vérification de la présence des éléments HTML
+    if (!champFamily || !champGiven || !resDiv) {
+      console.error("Un élément du formulaire de recherche FHIR est introuvable.");
+
+      afficherBulle(
+        "Le formulaire de recherche est incomplet.",
+        "warning"
+      );
+      return;
+    }
+
+    // Récupération du nom et du prénom
+    const family = champFamily.value.trim();
+    const given = champGiven.value.trim();
+
+    // Vérification des champs obligatoires
+    if (family.length < 2 || given.length < 2) {
+      afficherBulle(
+        "Veuillez renseigner le nom et le prénom.",
+        "warning"
+      );
+      return;
+    }
 
     // Vérification de la connexion Firebase
     const user = window.auth?.currentUser;
@@ -6877,8 +6891,9 @@ if (family.length < 2 || given.length < 2) {
       return;
     }
 
-    btnRecherche.disabled = true;
-    btnRecherche.textContent = "Recherche...";
+    // Désactivation du bouton pendant la recherche
+    btnRechercheFHIR.disabled = true;
+    btnRechercheFHIR.textContent = "Recherche...";
 
     afficherMessageRechercheFHIR(
       "Recherche en cours dans l'annuaire santé..."
@@ -6886,15 +6901,25 @@ if (family.length < 2 || given.length < 2) {
 
     try {
 
-      // Récupération du jeton Firebase
+      // --------------------------------------------------------
+      // RÉCUPÉRATION DU JETON FIREBASE
+      // --------------------------------------------------------
+
       const idToken = await user.getIdToken();
 
-      // Préparation des paramètres
+      // --------------------------------------------------------
+      // PRÉPARATION DES PARAMÈTRES FHIR
+      // --------------------------------------------------------
+
       const params = new URLSearchParams({
-        name: queryVal
+        family: family,
+        given: given
       });
 
-      // Appel du serveur GestUrg2
+      // --------------------------------------------------------
+      // APPEL DU SERVEUR GESTURG2
+      // --------------------------------------------------------
+
       const response = await fetch(
         `${URL_RECHERCHE_PRO}?${params.toString()}`,
         {
@@ -6906,10 +6931,13 @@ if (family.length < 2 || given.length < 2) {
         }
       );
 
-      // Lecture unique de la réponse
+      // --------------------------------------------------------
+      // LECTURE DE LA RÉPONSE
+      // --------------------------------------------------------
+
       const data = await response.json().catch(() => null);
 
-      // Gestion des erreurs HTTP
+      // Vérification des erreurs HTTP
       if (!response.ok) {
         throw new Error(
           data?.error ||
@@ -6930,14 +6958,17 @@ if (family.length < 2 || given.length < 2) {
         throw new Error("Format FHIR inattendu.");
       }
 
-      // Le serveur renvoie les entrées dans data.entry
+      // --------------------------------------------------------
+      // RÉCUPÉRATION DES RÉSULTATS
+      // --------------------------------------------------------
+
       const entries = Array.isArray(data.entry)
         ? data.entry
         : [];
 
       resDiv.replaceChildren();
 
-      // Aucun résultat
+      // Aucun résultat trouvé
       if (entries.length === 0) {
         afficherMessageRechercheFHIR(
           "Aucun praticien correspondant à cette recherche."
@@ -6945,7 +6976,10 @@ if (family.length < 2 || given.length < 2) {
         return;
       }
 
-      // Affichage des praticiens
+      // --------------------------------------------------------
+      // AFFICHAGE DES PRATICIENS
+      // --------------------------------------------------------
+
       entries.forEach(entry => {
 
         const resource = entry.resource || {};
@@ -6958,6 +6992,7 @@ if (family.length < 2 || given.length < 2) {
 
         const nomAffiche = nom || "Nom non renseigné";
 
+        // Création de la fiche du praticien
         const div = document.createElement("div");
 
         div.style.cssText = `
@@ -6968,27 +7003,36 @@ if (family.length < 2 || given.length < 2) {
           transition: background 0.2s;
         `;
 
+        // Nom du praticien
         const titre = document.createElement("strong");
         titre.textContent = nomAffiche;
 
+        // Profession
         const sousTitre = document.createElement("div");
+
         sousTitre.style.cssText =
           "font-size:13px;color:var(--muted);margin-top:3px;";
+
         sousTitre.textContent = profession;
 
         div.appendChild(titre);
         div.appendChild(sousTitre);
 
+        // Identifiant professionnel
         if (identifiant) {
+
           const identifiantDiv = document.createElement("div");
+
           identifiantDiv.style.cssText =
             "font-size:12px;color:var(--muted);margin-top:3px;";
+
           identifiantDiv.textContent =
             "Identifiant : " + identifiant;
 
           div.appendChild(identifiantDiv);
         }
 
+        // Effet visuel au survol
         div.addEventListener("mouseenter", () => {
           div.style.background = "var(--field)";
         });
@@ -6997,16 +7041,25 @@ if (family.length < 2 || given.length < 2) {
           div.style.background = "transparent";
         });
 
-        // Sélection du praticien
+        // ------------------------------------------------------
+        // SÉLECTION DU PRATICIEN
+        // ------------------------------------------------------
+
         div.addEventListener("click", () => {
 
-          document.getElementById("proNom").value =
-            nom || "";
+          const champNom = document.getElementById("proNom");
+          const champProfession = document.getElementById("proProfession");
 
-          document.getElementById("proProfession").value =
-            profession !== "Profession non renseignée"
-              ? profession
-              : "";
+          if (champNom) {
+            champNom.value = nom || "";
+          }
+
+          if (champProfession) {
+            champProfession.value =
+              profession !== "Profession non renseignée"
+                ? profession
+                : "";
+          }
 
           resDiv.style.display = "none";
 
@@ -7019,7 +7072,10 @@ if (family.length < 2 || given.length < 2) {
         resDiv.appendChild(div);
       });
 
-      // Nombre de résultats
+      // --------------------------------------------------------
+      // COMPTEUR DE RÉSULTATS
+      // --------------------------------------------------------
+
       const compteur = document.createElement("div");
 
       compteur.style.cssText = `
@@ -7035,6 +7091,9 @@ if (family.length < 2 || given.length < 2) {
 
       resDiv.appendChild(compteur);
 
+      // Affichage de la liste
+      resDiv.style.display = "block";
+
     } catch (err) {
 
       console.error("Erreur recherche API e-Santé :", err);
@@ -7047,11 +7106,14 @@ if (family.length < 2 || given.length < 2) {
 
     } finally {
 
-      btnRecherche.disabled = false;
-      btnRecherche.textContent = "Rechercher";
+      // Réactivation du bouton
+      btnRechercheFHIR.disabled = false;
+      btnRechercheFHIR.textContent = "Rechercher";
     }
+
   });
 
+}
 
 // ------------------------------------------------------------
 // RECHERCHE AVEC LA TOUCHE ENTRÉE
