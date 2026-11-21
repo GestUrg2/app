@@ -1598,7 +1598,8 @@ button,input{font-family:inherit}
    ===================================================== */
 .hw{position:absolute;top:16px;bottom:16px;width:var(--wside,280px);z-index:2;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;min-height:0}
 .hw[hidden],.hw-card[hidden],.hw-tab[hidden]{display:none !important}
-#hw-left{left:16px}
+#hw-left{left:16px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+#hw-left .cw-list-card{flex:1 0 150px}
 #hw-right{right:16px;overflow-y:auto;overflow-x:hidden;padding:2px;scrollbar-width:thin}
 .hw-tab,.hw-backdrop{display:none}
 
@@ -1674,6 +1675,26 @@ button,input{font-family:inherit}
 .cw-ev small{font:500 12.5px/1.2 var(--font);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cw-ev.now b::after{content:"En cours";margin-left:8px;padding:2px 6px;border-radius:99px;background:var(--c);color:#fff;font:700 10px/1 var(--font);vertical-align:2px}
 .cw-empty,.hw-empty{margin:6px 0 2px;font:500 13.5px/1.4 var(--font);color:var(--muted)}
+
+/* --- Réunions : invitations, réunion imminente --- */
+.cw-new{all:unset;box-sizing:border-box;margin-left:auto;padding:5px 10px;border-radius:99px;background:#6b3fc4;color:#fff;font:700 11px/1 var(--font);letter-spacing:0;text-transform:none;cursor:pointer}
+@media (hover:hover){.cw-new:hover{filter:brightness(.92)}}
+.cw-new:focus-visible{outline:3px solid rgba(107,63,196,.4);outline-offset:2px}
+.cw-nextcard{border-color:#d9ccf5;background:linear-gradient(180deg,#f7f3ff,#fff)}
+.cw-nextcard b{display:block;font:700 15px/1.25 var(--font);color:var(--ink)}
+.cw-nextcard small{display:block;margin-top:3px;font:600 12.5px/1.3 var(--font);color:#6b3fc4}
+.cw-join{display:flex;align-items:center;justify-content:center;min-height:38px;margin-top:10px;border-radius:10px;background:#6b3fc4;color:#fff;text-decoration:none;font:700 13.5px/1 var(--font)}
+.cw-join:hover{filter:brightness(.92)}
+.inv{padding:9px 0;border-top:1px solid var(--line-soft)}.inv:first-child{border-top:0;padding-top:0}
+.inv b{display:block;font:600 14px/1.25 var(--font);color:var(--ink)}
+.inv small{display:block;margin-top:3px;font:500 12.5px/1.3 var(--font);color:var(--muted)}
+.inv .hw-tags{margin-top:5px}
+.inv-btns{display:flex;gap:6px;margin-top:8px}
+.inv-btns button{all:unset;box-sizing:border-box;flex:1;display:grid;place-items:center;min-height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font:600 12.5px/1 var(--font);cursor:pointer}
+.inv-btns .ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.inv-btns .no{color:var(--late)}
+@media (hover:hover){.inv-btns button:hover{filter:brightness(.94)}}
+.inv-btns button:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:1px}
 
 /* --- Raccourcis / patients --- */
 .hw-items{display:flex;flex-direction:column;gap:4px;min-height:0;flex:1;overflow-y:auto;margin:0 -6px;padding:0 6px}
@@ -1946,8 +1967,16 @@ kbd.gs-k{padding:4px 7px;border-radius:7px;border:1px solid var(--line);backgrou
         </button>
         <div class="cw-week" id="cwWeek"></div>
       </section>
+      <section class="hw-card cw-nextcard" id="cwNextCard" aria-label="Réunion imminente" hidden>
+        <h3 class="hw-title"><span class="hw-live"></span>Réunion imminente</h3>
+        <div id="cwNext" aria-live="polite"></div>
+      </section>
+      <section class="hw-card" id="cwInvCard" aria-label="Invitations à confirmer" hidden>
+        <h3 class="hw-title">Invitations <span class="hw-count red" id="cwInvCount"></span></h3>
+        <div id="cwInv" aria-live="polite"></div>
+      </section>
       <section class="hw-card cw-list-card" id="cwListCard" aria-label="Événements à venir">
-        <h3 class="hw-title">À venir</h3>
+        <h3 class="hw-title">À venir <button type="button" class="cw-new" id="cwNew" hidden title="Créer une réunion">+ Réunion</button></h3>
         <div class="cw-list" id="cwList" aria-live="polite"><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div>
       </section>
       <section class="hw-card mw-card" id="mwCard" aria-label="Messages non lus" hidden>
@@ -3048,7 +3077,7 @@ const STAT = { pris: "Réservé", attente: "En salle d'attente", encours: "En co
 const ROLES = { medecinReferent: "Médecin", infirmierReferent: "Infirmier(ère)", interneReferent: "Interne", externeReferent: "Externe" };
 
 let db, uid = null, pages = {};
-let rdvs = [], affs = [], evts = [], consEnCours = [], mesPatients = [], msgConvs = [], unsubMsg = null, nAujCache = 0;
+let rdvs = [], affs = [], evts = [], consEnCours = [], mesPatients = [], msgConvs = [], unsubMsg = null, nAujCache = 0, nInvCache = 0;
 const etat = { rdv: "load", aff: "load", evt: "load", cons: "load", pat: "load" };
 let jourAbonne = "", unsubRdv = null, unsubAff = null, unsubEvt = null, unsubCons = null, unsubEq = null;
 let hospisEq = new Map(), hospisAnciens = new Map(), patientsParHospi = new Map(), cleResolue = "", seqResol = 0, timerPlan = 0;
@@ -3070,7 +3099,7 @@ function basculerTiroir(id) {
   fermerTiroirs();
   if (ouvert) { el.classList.add("open"); $("hwBackdrop").classList.add("show"); $(id === "hw-left" ? "hwTabL" : "hwTabR").setAttribute("aria-expanded", "true"); }
 }
-const majBadgeL = () => pastille("hwBdgL", nAujCache + msgConvs.reduce((n, c) => n + c.nb, 0));
+const majBadgeL = () => pastille("hwBdgL", nAujCache + nInvCache + msgConvs.reduce((n, c) => n + c.nb, 0));
 const pastille = (id, n) => { const b = $(id); b.textContent = n > 99 ? "99+" : n; b.hidden = !n; };
 
 /* ---------- CALENDRIER (affectations multi-jours + réunions/événements + RDV) ---------- */
@@ -3107,6 +3136,8 @@ function evenements() {
   }));
   evts.forEach(ev => jours.forEach(k => {
     if (!applique(ev, k)) return;
+    const rep = (ev.responses || {})[uid];
+    if (rep === "non") return;
     const deb = tm(ev.start), fin = tm(ev.end);
     if (k === auj && fin <= nm) return;
     const lieu = ev.mode === "distanciel"
@@ -3115,7 +3146,7 @@ function evenements() {
     out.push({
       date: k, deb, fin, couleur: COUL.evt, maintenant: k === auj && deb <= nm && nm < fin,
       titre: ev.titre || "Événement",
-      detail: [`${ev.start} – ${ev.end}`, lieu].filter(Boolean).join(" · ")
+      detail: [!rep && ev.optResponse !== false && ev.creePar !== uid ? "⏳ À confirmer" : (rep === "peut-etre" ? "🟡 Peut-être" : ""), `${ev.start} – ${ev.end}`, lieu].filter(Boolean).join(" · ")
     });
   }));
   return out.sort((x, y) => x.date.localeCompare(y.date) || x.deb - y.deb);
@@ -3129,7 +3160,61 @@ function libelleJour(k) {
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 }
 
+/* ---------- RÉUNIONS : invitations + réunion imminente ---------- */
+function prochaine(ev, nbJours = 30) {
+  const now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
+  for (let i = 0; i < nbJours; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i); const k = iso(d);
+    if (applique(ev, k) && !(i === 0 && tm(ev.end) <= nm)) return { k, deb: tm(ev.start), fin: tm(ev.end) };
+  }
+  return null;
+}
+const lienSur = u => /^https?:\/\//i.test(u || "") ? u : "";
+function conflitAgenda(ev, occ) {
+  const chev = (s, e) => tm(s) < occ.fin && occ.deb < tm(e);
+  return evts.some(o => o.id !== ev.id && (o.responses || {})[uid] !== "non" && ((o.responses || {})[uid] === "oui" || o.creePar === uid) && applique(o, occ.k) && chev(o.start, o.end))
+    || affs.some(a => a.poste === "conge" && applique(a, occ.k) && chev(a.start, a.end));
+}
+function rendreInvitations() {
+  const ok = etat.evt === "ok", liste = [];
+  if (ok) evts.forEach(ev => {
+    if (ev.creePar === uid || ev.optResponse === false || (ev.responses || {})[uid]) return;
+    const occ = prochaine(ev); if (occ) liste.push({ ev, occ });
+  });
+  liste.sort((a, b) => a.occ.k.localeCompare(b.occ.k) || a.occ.deb - b.occ.deb);
+  nInvCache = liste.length; majBadgeL();
+  $("cwInvCard").hidden = !liste.length;
+  $("cwInvCount").textContent = liste.length || "";
+  $("cwInv").innerHTML = liste.slice(0, 4).map(({ ev, occ }) => {
+    const facult = (ev.participantsOptional || []).includes(uid);
+    const lieu = ev.mode === "distanciel" ? "💻 Distanciel" : (ev.mode === "hybride" ? "💻📍 " + (ev.lieu || "Hybride") : (ev.lieu ? "📍 " + ev.lieu : ""));
+    return `<div class="inv"><b>${esc(ev.titre || "Réunion")}</b>`
+      + `<small>${esc(libelleJour(occ.k))} · ${esc(ev.start)} – ${esc(ev.end)}${lieu ? " · " + esc(lieu) : ""}</small>`
+      + (ev.creeParNom ? `<small>Organisé par ${esc(ev.creeParNom)}</small>` : "")
+      + `<div class="hw-tags">${facult ? '<span class="tg blue">Facultatif</span>' : '<span class="tg amber">Réponse attendue</span>'}${conflitAgenda(ev, occ) ? '<span class="tg red">⚠ Conflit d\'agenda</span>' : ""}</div>`
+      + `<div class="inv-btns"><button type="button" class="ok" data-id="${esc(ev.id)}" data-rep="oui">Accepter</button><button type="button" data-id="${esc(ev.id)}" data-rep="peut-etre">Peut-être</button><button type="button" class="no" data-id="${esc(ev.id)}" data-rep="non">Refuser</button></div></div>`;
+  }).join("") + (liste.length > 4 ? `<button type="button" class="hw-more" data-open-cal="1">Voir les ${liste.length} invitations</button>` : "");
+  rendreProchaine();
+}
+function rendreProchaine() {
+  const now = new Date(), nm = now.getHours() * 60 + now.getMinutes(), auj = iso(now);
+  let best = null;
+  if (etat.evt === "ok") evts.forEach(ev => {
+    if ((ev.responses || {})[uid] === "non" || !applique(ev, auj)) return;
+    const deb = tm(ev.start), fin = tm(ev.end), avance = Math.max(+ev.rappel || 15, 10);
+    if (nm >= fin || deb - nm > avance) return;
+    if (!best || deb < best.deb) best = { ev, deb, fin };
+  });
+  $("cwNextCard").hidden = !best;
+  if (!best) return;
+  const { ev, deb, fin } = best, lieu = ev.mode === "distanciel" ? "💻 Distanciel" : (ev.lieu ? "📍 " + ev.lieu : "");
+  const quand = nm >= deb ? `En cours · jusqu'à ${hhmm(fin)}` : `Dans ${deb - nm} min · ${ev.start}`;
+  $("cwNext").innerHTML = `<b>${esc(ev.titre || "Réunion")}</b><small>${esc(quand)}${lieu ? " · " + esc(lieu) : ""}</small>`
+    + (lienSur(ev.lien) ? `<a class="cw-join" href="${esc(lienSur(ev.lien))}" target="_blank" rel="noopener">Rejoindre la visio</a>` : "");
+}
+
 function rendreCalendrier() {
+  try { $("cwNew").hidden = pages.creerRDV !== true; rendreInvitations(); } catch (e) { console.warn("Widget réunions :", e); }
   const now = new Date(), auj = iso(now);
   $("cwDow").textContent = now.toLocaleDateString("fr-FR", { weekday: "long" });
   $("cwDay").textContent = now.getDate();
@@ -3505,6 +3590,16 @@ function gsChoisir(i) { const it = gs.items[i]; if (!it) return; gsFermer(); ouv
 
 /* ---------- Événements & cycle de vie ---------- */
 $("cwHead").onclick = () => { fermerTiroirs(); ouvrirCalendrier(); };
+$("cwNew").onclick = () => { if (pages.creerRDV !== true) return; try { localStorage.setItem("gu_new_rdv", String(Date.now())); } catch (e) { } fermerTiroirs(); ouvrirCalendrier(); };
+$("cwInv").onclick = e => {
+  if (e.target.closest("[data-open-cal]")) { fermerTiroirs(); ouvrirCalendrier(); return; }
+  const b = e.target.closest("[data-rep]"); if (!b) return;
+  const ev = evts.find(x => x.id === b.dataset.id); if (!ev) return;
+  const prev = ev.responses, val = b.dataset.rep;
+  ev.responses = { ...(ev.responses || {}), [uid]: val }; rendreCalendrier();
+  updateDoc(doc(db, "evenements", ev.id), { ["responses." + uid]: val })
+    .catch(err => { console.warn("Réponse à l'invitation :", err); ev.responses = prev; rendreCalendrier(); });
+};
 $("cwList").onclick = e => { if (e.target.closest(".cw-ev")) { fermerTiroirs(); ouvrirCalendrier(); } };
 $("mwList").onclick = e => { const b = e.target.closest("[data-conv]"); if (b) { fermerTiroirs(); ouvrirMessage(b.dataset.conv); } };
 $("hw-right").onclick = e => {

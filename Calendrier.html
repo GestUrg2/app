@@ -10,15 +10,17 @@
 :root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--late:#b92a30;--late-soft:#fdecec;--ok:#16784a;--ok-soft:#e1f4e9;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.1);--ring:0 0 0 4px rgba(11,111,164,.15)}
 .s-pris{--c:#0b6fa4;--bg:#e3f1f9}.s-attente{--c:#a35a00;--bg:#ffefc7}.s-encours{--c:#6b3fc4;--bg:#ece5fb}.s-termine{--c:#16784a;--bg:#e1f4e9}.s-annule{--c:#b92a30;--bg:#fdecec}
 *{box-sizing:border-box}[hidden]{display:none!important}
-html,body{margin:0;min-height:100%}
-body{font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:#fff}
+html,body{margin:0;height:100%;overflow:hidden}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:#fff}
 h1,h2,p{margin:0}
-header{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
+header{flex:none;display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
 .brand{width:38px;height:38px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px}
 .brand svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .kicker{font-size:12px;font-weight:600;color:var(--muted)}h1{font-size:18px;font-weight:700}
 #who{margin-left:auto;font-size:14px;font-weight:600;color:var(--muted)}
-main{padding:16px clamp(12px,2.5vw,28px) 32px}
+main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:12px clamp(12px,2.5vw,28px) 14px}
+#app{flex:1;min-height:0;display:flex;flex-direction:column}
+.tools,.legend{flex:none}
 .tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 #titre{font-size:18px;font-weight:700;text-transform:capitalize;min-width:200px}
 button{font:inherit}
@@ -32,7 +34,7 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 .chip[aria-pressed=false]{background:#fff;border-color:var(--line);color:var(--muted);text-decoration:line-through}
 .chip[aria-pressed=false]::before{background:var(--line)}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;font-size:12px;font-weight:700;border-radius:999px;white-space:nowrap;color:var(--c);background:var(--bg)}
-#wrap{overflow:auto;max-height:calc(100vh - 210px);min-height:360px;border:1px solid var(--line);border-radius:14px}
+#wrap{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:14px}
 #cal{display:grid;min-width:100%}
 .gh{position:sticky;top:0;z-index:5;padding:8px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);background:#fff;border-bottom:1px solid var(--line);border-left:1px solid var(--line-soft);text-transform:capitalize}
 .gh b{display:block;font-size:20px;color:var(--ink);line-height:1.2}
@@ -47,6 +49,11 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 .aff.cs{color:#16784a;background:rgba(22,120,74,.10);border-left-color:#16784a}
 .ev-srv{position:absolute;left:2px;right:2px;z-index:1;overflow:hidden;padding:3px 7px;text-align:left;font-size:12px;line-height:1.3;font-weight:600;color:#4c1d95;background:#ece5fb;border:0;border-left:5px solid #6b3fc4;border-radius:6px;cursor:pointer;white-space:nowrap;text-overflow:ellipsis}
 .ev-srv:hover{filter:brightness(.96)}
+.ev-srv.non{opacity:.45;text-decoration:line-through}
+.ev-srv.att{background:#fff;outline:1.5px dashed #6b3fc4;outline-offset:-1.5px}
+.rsvp-sum{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.rsvp-sum span{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--field)}
+.warn-c{margin:10px 0 0;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:600;color:#a35a00;background:#ffefc7}
+.btn-sec{appearance:none;min-height:40px;padding:0 14px;font:600 14px var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--primary);margin-top:8px;width:100%;text-decoration:none;display:flex;align-items:center;justify-content:center}.btn-sec:hover{background:var(--primary-soft)}
 .etat{padding:6px 12px;font-size:13px;font-weight:700;border-radius:999px;color:var(--muted);background:var(--line-soft)}.etat.cs{color:#16784a;background:#e1f4e9}.etat.oth{color:var(--primary-d);background:var(--primary-soft)}
 #detail{position:fixed;top:0;right:0;bottom:0;z-index:50;width:min(440px,100%);padding:20px;overflow:auto;background:#fff;border-left:1px solid var(--line);box-shadow:var(--shadow)}
 .dh{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
@@ -114,68 +121,13 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--primary);bo
 </main>
 <aside id="detail" hidden></aside>
 
-<!-- ===== MODALE RÉUNION PRO STYLE ===== -->
-<dialog id="dlgEv">
-  <div class="dh"><h2 id="eTitreDlg">Nouvelle réunion</h2><button class="x" id="eX" aria-label="Fermer">×</button></div>
-  <div class="db">
-    <div class="two">
-      <div><label for="eCat">Type</label>
-        <select id="eCat">
-          <option value="reunion">Réunion</option>
-          <option value="staff">Staff / relève</option>
-          <option value="formation">Formation</option>
-          <option value="autre">Autre événement</option>
-        </select>
-      </div>
-      <div><label for="eTitre">Titre</label><input id="eTitre" type="text" placeholder="Ex. Staff des urgences"></div>
-    </div>
-    <div class="two">
-      <div><label for="eDateDebut">Du</label><input id="eDateDebut" type="date"></div>
-      <div><label for="eDateFin">Au (inclus)</label><input id="eDateFin" type="date"></div>
-    </div>
-    <div class="two">
-      <div><label for="eStart">Heure de début</label><input id="eStart" type="time" value="14:00"></div>
-      <div><label for="eEnd">Heure de fin</label><input id="eEnd" type="time" value="15:00"></div>
-    </div>
-    <div>
-      <label for="eMode">Modalité</label>
-      <select id="eMode">
-        <option value="presentiel">Sur place (présentiel)</option>
-        <option value="distanciel">En distanciel (visio)</option>
-        <option value="hybride">Hybride</option>
-      </select>
-    </div>
-    <div id="eLieuBox"><label for="eLieu">Lieu / salle</label><input id="eLieu" type="text" placeholder="Salle Bâtiment C"></div>
-    <div id="eLienBox" hidden><label for="eLien">Lien visio</label><input id="eLien" type="url" placeholder="https://..."></div>
-    <div><label for="eDesc">Description <small>(facultatif)</small></label><textarea id="eDesc"></textarea></div>
-
-    <!-- PRO ATTENDEE PICKER SECTION -->
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span class="lbl" style="margin:0">Gestion des invités &amp; Disponibilités</span>
-        <label class="chk-inline" style="min-height:30px;font-size:12.5px"><input type="checkbox" id="eTous"> Toute l’équipe</label>
-      </div>
-      <div class="attendee-box" id="ePartSection">
-        <input class="attendee-search" id="eSearchPart" type="search" placeholder="Rechercher par nom ou spécialité..." style="min-height:38px">
-        <div class="attendee-list" id="attendeeListContainer"></div>
-      </div>
-    </div>
-
-    <details style="margin-top:4px"><summary>Options de réunion avancées</summary>
-      <div style="display:grid;gap:8px;margin-top:10px">
-        <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optInvite" checked> Autoriser les participants à inviter d'autres personnes</label>
-        <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optMaskList"> Masquer la liste des participants</label>
-        <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optResponse" checked> Demander une réponse (RSVP)</label>
-      </div>
-    </details>
-  </div>
-  <div class="df" style="display:flex;gap:10px;padding:15px 20px;border-top:1px solid var(--line)"><button class="btn-danger" id="eDel" style="width:auto;margin-right:auto" hidden>Supprimer</button><button class="b" id="eCancel" style="width:auto">Annuler</button><button class="btn-primary" id="eSave" style="width:auto">Enregistrer</button></div>
-</dialog>
+<!-- La modale de réunion est fournie par reunions.js -->
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initReunions, quand, premiereDate, resumeRSVP, ics, applique as appliqueEv, CATS as CATS_EV, MODES as MODES_EV } from "./reunions.js";
+import { getFirestore, doc, getDoc, getDocs, updateDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app);
 const $=s=>document.querySelector(s);
@@ -215,16 +167,12 @@ onAuthStateChanged(auth,async user=>{
     allEvts=evtSnap.docs.map(d=>({id:d.id,...d.data()}));
     $('#who').textContent=data.nom||"";
 
-    // VÉRIFICATION STRICTE DES DROITS POUR CREERRDV
-    if(data.creerRDV===true || data.admin || data.pages?.affectations){
-      $('#bNewEv').hidden=false;
-    } else {
-      $('#bNewEv').hidden=true;
-    }
+    // Création de réunion réservée aux comptes ayant pages.creerRDV
+    $('#bNewEv').hidden=!(data.pages&&data.pages.creerRDV===true);
 
     $('#gate').hidden=true;$('#app').hidden=false;
-    ecouter();ecouterAffectations();window.masquerLoader();
-  }catch(e){window.masquerLoader();$('#modal-error').style.display="flex";console.error(e)}
+    ecouter();ecouterAffectations();window.masquerLoader();setTimeout(demandeWidget,0);
+  }catch(e){window.masquerLoader();afficherBulle("Une erreur est survenue, veuillez réessayer.",BULLE.ERR);console.error(e)}
 });
 
 function plage(){
@@ -283,7 +231,8 @@ function rendre(){
     h+=affs.filter(a=>applique(a,k)).map(a=>`<div class="aff ${a.consultation?'cs':''}" style="top:${(tm(a.start)-h0*60)/60*PX}px;height:${(tm(a.end)-tm(a.start))/60*PX}px">${esc(a.posteLabel||a.poste||'')} · ${esc(a.start)}–${esc(a.end)}</div>`).join('');
     h+=evts.filter(ev=>applique(ev,k)).map(ev=>{
       const ico=ev.mode==='distanciel'?'💻':(ev.mode==='hybride'?'💻📍':'📍');
-      return `<button type="button" class="ev-srv" data-evid="${ev.id}" style="top:${(tm(ev.start)-h0*60)/60*PX}px;height:${Math.max(26,(tm(ev.end)-tm(ev.start))/60*PX-2)}px"><b>${esc(ev.start)}</b> ${ico} ${esc(ev.titre)}</button>`;
+      const mr=ev.responses&&ev.responses[medecin.uid],cl=mr==='non'?' non':((!mr&&ev.optResponse!==false&&ev.creePar!==medecin.uid)?' att':'');
+      return `<button type="button" class="ev-srv${cl}" data-evid="${ev.id}" title="${esc(ev.titre)}" style="top:${(tm(ev.start)-h0*60)/60*PX}px;height:${Math.max(26,(tm(ev.end)-tm(ev.start))/60*PX-2)}px"><b>${esc(ev.start)}</b> ${ico} ${esc(ev.titre)}</button>`;
     }).join('');
     for(const hr in grp)grp[hr].forEach((r,i,arr)=>{
       const p=r.patient||{},top=(tm(hr)-h0*60)/60*PX;
@@ -302,50 +251,45 @@ $('#cal').onclick=e=>{
   if(ev)sel=ev.dataset.id;
 };
 
-$('#bNewEv').onclick=()=>ouvrirEvDlg(null);
 
 function ouvrirEvenement(id){
   const ev=allEvts.find(x=>x.id===id),box=$('#detail');
   if(!ev){box.hidden=true;return}
-  const responses=ev.responses||{};
-  const myResp=responses[medecin.uid]||'attente';
+  const rs=ev.responses||{},mine=rs[medecin.uid]||'attente',invite=ev.tous||(ev.participants||[]).includes(medecin.uid);
   const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</span></div>`;
-  
-  let h=`<div class="dh"><h2 class="card-title">${esc(ev.titre)}</h2><button class="x" id="closeEv">×</button></div>`
-    +`<span class="pill" style="--c:#6b3fc4;--bg:#ece5fb">${esc(CATS[ev.cat]||'Réunion')}</span>`
-    +F('Date',ev.date+(ev.dateFin&&ev.dateFin!==ev.date?' au '+ev.dateFin:''))
-    +F('Horaires',`${ev.start} – ${ev.end}`)
-    +F('Modalité',MODES[ev.mode]||ev.mode);
-  if(ev.lieu) h+=F('Lieu',ev.lieu);
-  if(ev.lien) h+=`<div class="fact"><label>Lien visio</label><a href="${esc(ev.lien)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700">${esc(ev.lien)}</a></div>`;
-  if(ev.description) h+=F('Description',ev.description);
+  const k0=premiereDate(ev),s0=tm(ev.start),e0=tm(ev.end);
+  let h=`<div class="dh"><h2 class="card-title">${esc(ev.titre)}</h2><button class="x" id="closeEv" aria-label="Fermer">×</button></div>`
+    +`<span class="pill" style="--c:#6b3fc4;--bg:#ece5fb">${esc(CATS_EV[ev.cat]||'Réunion')}</span>`
+    +F('Quand',quand(ev))+F('Horaires',`${ev.start} – ${ev.end}`)+F('Modalité',MODES_EV[ev.mode]||ev.mode);
+  if(ev.lieu)h+=F('Lieu',ev.lieu);
+  if(ev.creeParNom)h+=F('Organisateur',ev.creeParNom);
+  if(ev.description)h+=F('Ordre du jour',ev.description);
+  if(ev.lien)h+=`<a class="btn-ev" href="${esc(ev.lien)}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Rejoindre la visio</a>`;
 
-  if(ev.optResponse!==false){
-    h+=`<div class="fact"><label>Votre réponse (RSVP)</label>
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <button class="b ${myResp==='oui'?'on':''}" onclick="repondreEv('${ev.id}','oui')">Je participe</button>
-        <button class="b ${myResp==='non'?'on':''}" onclick="repondreEv('${ev.id}','non')">Refuser</button>
-        <button class="b ${myResp==='peut-etre'?'on':''}" onclick="repondreEv('${ev.id}','peut-etre')">Peut-être</button>
-      </div>
-    </div>`;
+  // conflits personnels (autre réunion ou congé sur le même créneau)
+  const conf=[];
+  allEvts.forEach(o=>{if(o.id!==ev.id&&(o.tous||(o.participants||[]).includes(medecin.uid))&&(o.responses||{})[medecin.uid]!=='non'&&appliqueEv(o,k0)&&tm(o.start)<e0&&s0<tm(o.end))conf.push('Réunion « '+o.titre+' » '+o.start+'–'+o.end)});
+  allAffs.forEach(a=>{if(a.uid===medecin.uid&&a.poste==='conge'&&appliqueEv(a,k0)&&tm(a.start)<e0&&s0<tm(a.end))conf.push('Repos / congé '+a.start+'–'+a.end)});
+  if(invite&&conf.length)h+=`<div class="warn-c">⚠ Conflit d’agenda : ${esc(conf.join(' · '))}</div>`;
+
+  if(invite&&ev.optResponse!==false){
+    h+=`<div class="fact"><label>Votre réponse</label><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">`
+      +[['oui','Je participe'],['peut-etre','Peut-être'],['non','Refuser']].map(([v,l])=>`<button class="b ${mine===v?'on':''}" onclick="repondreEv('${ev.id}','${v}')">${l}</button>`).join('')+`</div></div>`;
   }
-
-  if(!ev.optMaskList){
-    const parts=(ev.participants||[]).map(uid=>{
-      const uObj=users.find(x=>x.uid===uid);
-      const resp=responses[uid];
-      const badge=resp==='oui'?'🟢':(resp==='non'?'🔴':(resp==='peut-etre'?'🟡':'⏳'));
-      return `<div style="font-size:13px;padding:2px 0">${badge} ${esc(uObj?.nom||uid)}</div>`;
-    }).join('');
-    h+=F('Invités',parts);
+  const masque=ev.optMaskList&&ev.creePar!==medecin.uid&&!peutCreer();
+  if(!masque){
+    const c=resumeRSVP(ev);
+    const ligne=(uid,tag)=>{const r=rs[uid],b=r==='oui'?'🟢':r==='non'?'🔴':r==='peut-etre'?'🟡':'⏳';return `<div style="font-size:13px;padding:2px 0">${b} ${esc(users.find(x=>x.uid===uid)?.nom||uid)}${tag?` <small class="mut">${tag}</small>`:''}</div>`};
+    const m=ev.participantsMandatory||[],o=ev.participantsOptional||[];
+    let list=ev.tous?'<div style="font-size:13px">Toute l’équipe</div>':m.map(u=>ligne(u,'')).join('')+o.map(u=>ligne(u,'facultatif')).join('');
+    if(ev.creePar&&!m.includes(ev.creePar)&&!ev.tous)list=ligne(ev.creePar,'organisateur')+list;
+    h+=`<div class="fact"><label>Invités</label><div class="rsvp-sum"><span>🟢 ${c.oui}</span><span>🟡 ${c.pe}</span><span>🔴 ${c.non}</span><span>⏳ ${c.att}</span></div><div style="margin-top:8px">${list||'—'}</div></div>`;
   }
-
-  if(ev.creePar===medecin.uid || medecin.admin || medecin.creerRDV){
-    h+=`<button class="btn-primary" onclick="ouvrirEvDlg(allEvts.find(x=>x.id==='${ev.id}'))" style="margin-top:10px">Modifier</button>`;
-  }
-
+  h+=`<button class="btn-sec" id="icsEv">📅 Ajouter à mon agenda (.ics)</button>`;
+  if(peutCreer())h+=`<button class="btn-primary" onclick="modifierEv('${ev.id}')">Modifier / supprimer</button>`;
   box.hidden=false;box.innerHTML=h;
   $('#closeEv').onclick=()=>{box.hidden=true};
+  $('#icsEv').onclick=()=>ics(ev);
 }
 
 window.repondreEv=async(evId,statut)=>{
@@ -357,169 +301,29 @@ window.repondreEv=async(evId,statut)=>{
   }catch(e){console.error(e);afficherBulle('Échec',BULLE.ERR)}
 };
 
-function syncEvMode(){
-  const m=$('#eMode').value;
-  $('#eLieuBox').hidden=m==='distanciel';
-  $('#eLienBox').hidden=m==='presentiel';
+
+/* ===== Moteur de réunions (droit pages.creerRDV) ===== */
+const R=initReunions({
+  db,
+  getMe:()=>medecin,
+  getUsers:()=>users,
+  getAffs:()=>allAffs,
+  getEvts:()=>allEvts,
+  notify:afficherBulle,
+  refresh:async()=>{allAffs=(await getDocs(collection(db,'affectations'))).docs.map(d=>d.data())}
+});
+const peutCreer=()=>medecin.pages?.creerRDV===true;
+window.modifierEv=id=>{const ev=allEvts.find(x=>x.id===id);if(ev)R.ouvrir(ev)};
+$('#bNewEv').onclick=()=>R.ouvrir(null,{date:iso(anchor)});
+
+/* Ouverture demandée depuis le widget d'accueil (shell) */
+function demandeWidget(){
+  if(!medecin.uid||!localStorage.getItem('gu_new_rdv'))return;
+  localStorage.removeItem('gu_new_rdv');
+  if(peutCreer())R.ouvrir(null,{date:iso(new Date())});
 }
-$('#eMode').onchange=syncEvMode;
-$('#eTous').onchange=e=>{
-  const checked = e.target.checked;
-  $('#ePartSection').style.opacity=checked?'.4':'1';
-  $('#ePartSection').style.pointerEvents=checked?'none':'auto';
-};
-
-/* --- PRO ATTENDEE PICKER SCRIPT --- */
-let selectedMandatory = new Set();
-let selectedOptional = new Set();
-
-function renderAttendeePicker(){
-  const queryText = norm($('#eSearchPart').value);
-  const dateDebut = $('#eDateDebut').value;
-  const hStart = $('#eStart').value;
-  const hEnd = $('#eEnd').value;
-
-  const container = $('#attendeeListContainer');
-  const filteredUsers = users.filter(u => norm(u.nom + ' ' + u.specialite).includes(queryText));
-
-  if(!filteredUsers.length){
-    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:13px">Aucun membre trouvé</div>';
-    return;
-  }
-
-  container.innerHTML = filteredUsers.map(u => {
-    const isMand = selectedMandatory.has(u.uid);
-    const isOpt = selectedOptional.has(u.uid);
-    
-    let isBusy = false;
-    if(dateDebut && hStart && hEnd){
-      isBusy = allAffs.some(a => a.uid === u.uid && applique(a, dateDebut) && tm(a.start) < tm(hEnd) && tm(hStart) < tm(a.end)) ||
-               allEvts.some(ev => (ev.participants||[]).includes(u.uid) && applique(ev, dateDebut) && tm(ev.start) < tm(hEnd) && tm(hStart) < tm(ev.end) && ev.id !== editEvId);
-    }
-
-    const badgeHtml = isBusy 
-      ? `<span class="badge-status badge-busy">🔴 Occupé(e)</span>` 
-      : `<span class="badge-status badge-free">🟢 Libre</span>`;
-
-    return `
-      <div class="attendee-item" data-uid="${esc(u.uid)}">
-        <div class="att-info">
-          <div class="att-name">${esc(u.nom)}</div>
-          <div class="att-sub">${esc(u.specialite || 'Personnel')} · ${badgeHtml}</div>
-        </div>
-        <div class="role-toggle">
-          <button type="button" class="role-btn ${isMand?'active-mand':''}" onclick="toggleAttendeeRole('${u.uid}','mand')">Obligatoire</button>
-          <button type="button" class="role-btn ${isOpt?'active-opt':''}" onclick="toggleAttendeeRole('${u.uid}','opt')">Facultatif</button>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-window.toggleAttendeeRole=(uid, role)=>{
-  if(role==='mand'){
-    if(selectedMandatory.has(uid)){ selectedMandatory.delete(uid); }
-    else { selectedMandatory.add(uid); selectedOptional.delete(uid); }
-  } else {
-    if(selectedOptional.has(uid)){ selectedOptional.delete(uid); }
-    else { selectedOptional.add(uid); selectedMandatory.delete(uid); }
-  }
-  renderAttendeePicker();
-};
-
-$('#eSearchPart').oninput = renderAttendeePicker;
-$('#eDateDebut').onchange = renderAttendeePicker;
-$('#eStart').onchange = renderAttendeePicker;
-$('#eEnd').onchange = renderAttendeePicker;
-
-function ouvrirEvDlg(ev){
-  editEvId=ev?.id||null;
-  const d=iso(anchor);
-  $('#eTitreDlg').textContent=ev?'Modifier la réunion':'Nouvelle réunion';
-  $('#eCat').value=ev?.cat||'reunion';
-  $('#eTitre').value=ev?.titre||'';
-  $('#eDateDebut').value=ev?.date||d;
-  $('#eDateFin').value=ev?.dateFin||ev?.date||d;
-  $('#eStart').value=ev?.start||'14:00';
-  $('#eEnd').value=ev?.end||'15:00';
-  $('#eMode').value=ev?.mode||'presentiel';syncEvMode();
-  $('#eLieu').value=ev?.lieu||'';
-  $('#eLien').value=ev?.lien||'';
-  $('#eDesc').value=ev?.description||'';
-  
-  const tous=ev?!!ev.tous:false;
-  $('#eTous').checked=tous;
-  $('#ePartSection').style.opacity=tous?'.4':'1';
-  $('#ePartSection').style.pointerEvents=tous?'none':'auto';
-
-  selectedMandatory = new Set(ev?.participantsMandatory||[]);
-  selectedOptional = new Set(ev?.participantsOptional||[]);
-
-  $('#optInvite').checked=ev?.optInvite??true;
-  $('#optMaskList').checked=ev?.optMaskList??false;
-  $('#optResponse').checked=ev?.optResponse??true;
-
-  const btnDel = $('#eDel');
-  if(ev){
-    btnDel.hidden = false;
-  } else {
-    btnDel.hidden = true;
-  }
-
-  renderAttendeePicker();
-  $('#dlgEv').showModal();
-}
-$('#eX').onclick=$('#eCancel').onclick=()=>$('#dlgEv').close();
-
-$('#eSave').onclick=async()=>{
-  const titre=$('#eTitre').value.trim();
-  const d1=$('#eDateDebut').value,d2=$('#eDateFin').value||d1;
-  const s=$('#eStart').value,e=$('#eEnd').value;
-  const mode=$('#eMode').value;
-  const tous=$('#eTous').checked;
-
-  const mand=[...selectedMandatory];
-  const opt=[...selectedOptional];
-
-  if(!titre)return afficherBulle('Saisissez un titre',BULLE.WARN);
-  if(!d1||d2<d1)return afficherBulle('Dates invalides',BULLE.WARN);
-
-  const allUids=[...new Set([...mand,...opt,medecin.uid])];
-  const payload={
-    cat:$('#eCat').value,
-    titre,
-    date:d1,
-    dateFin:d2!==d1?d2:null,
-    start:s,
-    end:e,
-    mode,
-    lieu:mode==='distanciel'?'':$('#eLieu').value.trim(),
-    lien:mode==='presentiel'?'':$('#eLien').value.trim(),
-    description:$('#eDesc').value.trim(),
-    tous,
-    participantsMandatory:mand,
-    participantsOptional:opt,
-    participants:allUids,
-    optInvite:$('#optInvite').checked,
-    optMaskList:$('#optMaskList').checked,
-    optResponse:$('#optResponse').checked,
-    responses:editEvId?(allEvts.find(x=>x.id===editEvId)?.responses||{}):{},
-    creePar:medecin.uid,
-    creeParNom:medecin.nom||''
-  };
-
-  $('#eSave').disabled=true;
-  try{
-    if(editEvId)await updateDoc(doc(db,'evenements',editEvId),payload);
-    else await addDoc(collection(db,'evenements'),{...payload,creeLe:serverTimestamp()});
-    $('#dlgEv').close();afficherBulle('Réunion enregistrée',BULLE.OK);
-  }catch(err){console.error(err);afficherBulle('Échec',BULLE.ERR)}
-  $('#eSave').disabled=false;
-};
-
-$('#eDel').onclick=async()=>{
-  if(!editEvId||!confirm('Supprimer ?'))return;
-  await deleteDoc(doc(db,'evenements',editEvId));$('#dlgEv').close();afficherBulle('Supprimé',BULLE.OK);
-};
+addEventListener('storage',e=>{if(e.key==='gu_new_rdv')demandeWidget()});
+setTimeout(demandeWidget,800);
 </script>
 </body>
 </html>

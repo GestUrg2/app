@@ -9,19 +9,22 @@
 <style>
 :root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--ev:#6b3fc4;--ev-soft:#ece5fb;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.1);--ring:0 0 0 4px rgba(11,111,164,.15)}
 *{box-sizing:border-box}[hidden]{display:none!important}
-html,body{margin:0;min-height:100%}
-body{font-family:var(--font);font-size:15px;line-height:1.4;color:var(--ink);background:#fff}
+html,body{margin:0;height:100%;overflow:hidden}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;font-family:var(--font);font-size:15px;line-height:1.4;color:var(--ink);background:#fff}
 h1,h2,p{margin:0}button{font:inherit}
-header{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
+header{flex:none;display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
 .brand{width:38px;height:38px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px}
 .brand svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 h1{font-size:18px;font-weight:700}
 #who{margin-left:auto;font-size:14px;font-weight:600;color:var(--muted)}
-.volet-tabs{display:flex;gap:4px;padding:12px 20px 0;background:var(--field);border-bottom:1px solid var(--line)}
+.volet-tabs{flex:none;display:flex;gap:4px;padding:12px 20px 0;background:var(--field);border-bottom:1px solid var(--line)}
 .vtab{padding:10px 18px;font-weight:600;font-size:14px;color:var(--muted);background:transparent;border:1px solid transparent;border-bottom:0;border-radius:10px 10px 0 0;cursor:pointer}
 .vtab.active{color:var(--primary-d);background:#fff;border-color:var(--line);border-bottom-color:#fff}
-main{padding:16px clamp(12px,2.5vw,28px) 32px}
+main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:12px clamp(12px,2.5vw,28px) 12px}
+#voletAff:not([hidden]){flex:1;min-height:0;display:flex;flex-direction:column}
+#voletEvt:not([hidden]){flex:1;min-height:0;overflow:auto}
+.tools,.filters,.legend,.hint{flex:none}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;padding:10px 12px;background:var(--field);border:1px solid var(--line-soft);border-radius:12px}
 #titre{font-size:18px;font-weight:700;min-width:185px}
@@ -51,7 +54,7 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--primary);bo
 .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;font-size:12.5px;font-weight:700;color:var(--c);background:var(--bg);border:2px solid transparent;border-radius:999px;cursor:pointer}
 .chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
 .chip[aria-pressed=false]{background:#fff;border-color:var(--line);color:var(--muted);text-decoration:line-through}.chip[aria-pressed=false]::before{background:var(--line)}
-#wrap{overflow:auto;max-height:calc(100vh - 335px);min-height:320px;border:1px solid var(--line);border-radius:14px}
+#wrap{flex:1;min-height:200px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:14px}
 #plan{display:grid;min-width:100%}
 .gh{position:sticky;top:0;z-index:6;padding:7px 6px;text-align:center;font-size:12.5px;font-weight:600;color:var(--muted);background:#fff;border-bottom:1px solid var(--line);border-left:1px solid var(--line-soft);text-transform:capitalize}
 .gh b{display:block;font-size:18px;color:var(--ink);line-height:1.2}
@@ -105,11 +108,30 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
 .modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
 .modalna .card{max-width:440px;text-align:center;padding:30px;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
 .modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}.modalna p{margin-bottom:8px}
-.meeting-card{padding:12px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mh{margin:18px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.meeting-card{cursor:pointer;padding:12px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .meeting-card:hover{border-color:var(--primary);background:var(--primary-soft)}
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+.grp{grid-column:1/-1;position:relative;background:var(--field);border-top:1px solid var(--line);border-bottom:1px solid var(--line-soft);cursor:pointer;user-select:none}
+.grp span{position:sticky;left:12px;display:inline-flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;font-weight:700;color:var(--primary-d)}
+.grp em{font-style:normal;font-weight:600;font-size:12px;color:var(--muted)}
+.grp .car{display:inline-block;transition:transform .15s}.grp.shut .car{transform:rotate(-90deg)}
+.nm.poste{flex-direction:row;align-items:center;gap:8px}.nm.poste i{flex:none;width:10px;height:10px;border-radius:50%}
+.nm.poste div{min-width:0;display:flex;flex-direction:column}
+.pp{display:flex;justify-content:space-between;gap:6px;width:100%;margin:0 0 2px;padding:2px 6px;text-align:left;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--ink);background:var(--bg,#fff);border:0;border-left:4px solid var(--c,#9aa9b8);border-radius:5px;cursor:pointer;overflow:hidden;white-space:nowrap}
+.pp span{overflow:hidden;text-overflow:ellipsis}.pp small{flex:none;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}.pp:hover{filter:brightness(.96)}
+.pp.un{--c:#cbd5df;--bg:#f4f7fa;color:var(--muted)}
+.more{display:block;width:100%;padding:2px 4px;font-size:11.5px;font-weight:700;color:var(--primary-d);background:transparent;border:0;cursor:pointer;text-align:left}.more:hover{text-decoration:underline}
+.cnt{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.cnt b{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;font-size:12px;color:var(--c);background:var(--bg);border-radius:999px}
+.cnt .add{width:20px;height:20px;line-height:1;font-size:15px;font-weight:700;color:var(--muted);background:transparent;border:1px dashed var(--line);border-radius:6px;cursor:pointer;opacity:0}
+.cell:hover .cnt .add{opacity:1}.cnt .add:hover{color:var(--primary);border-color:var(--primary)}
+.dens-c .cell{min-height:34px;padding:2px 3px}.dens-c .ca,.dens-c .pp{font-size:10.5px;padding:1px 4px;margin-bottom:1px}.dens-c .nm{padding:3px 10px}.dens-c .nm small{display:none}.dens-c .nm b{font-size:13px}
+.mini-search{margin-bottom:6px}
+.pick{max-height:160px;overflow:auto;margin-top:8px}
+.ro{padding:9px 12px;margin-bottom:10px;border-radius:10px;font-size:13px;font-weight:600;color:#a35a00;background:#ffefc7}
 @media(max-width:560px){.two{grid-template-columns:1fr}}
 </style>
 </head>
@@ -137,6 +159,8 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
       <span class="pill" id="nowpill"></span>
       <input id="jour" type="date" aria-label="Aller à la date" style="margin-left:auto">
       <div class="seg"><button class="b" id="v-week">Semaine</button><button class="b" id="v-day">Jour</button></div>
+      <div class="seg" aria-label="Mode d’affichage"><button class="b" id="m-pers" title="Une ligne par personne">👤 Par personne</button><button class="b" id="m-poste" title="Une ligne par poste : qui est où">🗂 Par poste</button></div>
+      <button class="b" id="bDens" title="Affichage compact">▤ Compact</button>
       <button class="b" id="bParam">Durée des RDV</button>
       <button class="btn-primary" id="bNew">+ Affectation</button>
     </div>
@@ -145,7 +169,10 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
       <input id="q" type="search" placeholder="Nom ou spécialité…" aria-label="Rechercher une personne">
       <select id="fSpec" aria-label="Filtrer par spécialité"><option value="">Toutes les spécialités</option></select>
       <select id="fPoste" aria-label="Filtrer par poste affecté"><option value="">Tous les postes</option></select>
-      <label class="chk-inline"><input type="checkbox" id="fOnlyAff"> Affectés sur la période</label>
+      <label class="chk-inline"><input type="checkbox" id="fOnlyAff"> Affectés</label>
+      <label class="chk-inline"><input type="checkbox" id="fNoAff"> Sans affectation</label>
+      <label class="chk-inline" id="lGroup"><input type="checkbox" id="fGroup" checked> Grouper par spécialité</label>
+      <select id="pSize" aria-label="Personnes par page"><option value="25">25 / page</option><option value="50" selected>50 / page</option><option value="100">100 / page</option><option value="500">Tout</option></select>
       <div class="pager" id="pager">
         <span id="pageInfo">0 personne</span>
         <button class="b" id="pPrev" aria-label="Page précédente">‹</button>
@@ -163,8 +190,9 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
     <div class="tools">
       <input id="eSearchList" type="search" placeholder="Rechercher une réunion..." style="width:260px">
       <select id="eFilterCat" style="width:auto"><option value="">Toutes les catégories</option><option value="reunion">Réunion</option><option value="staff">Staff / relève</option><option value="formation">Formation</option><option value="autre">Autre</option></select>
-      <button class="btn-ev" id="bNewEv" style="margin-left:auto">+ Nouvelle réunion</button>
+      <button class="btn-ev" id="bNewEv" style="margin-left:auto" hidden>+ Nouvelle réunion</button>
     </div>
+    <div class="ro" id="roEv" hidden style="margin-top:12px">Lecture seule : la création et la modification de réunions nécessitent le droit « creerRDV ».</div>
     <div id="evtList" style="margin-top:16px"></div>
   </div>
 </main>
@@ -173,8 +201,11 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
 <dialog id="dlg">
   <div class="dh"><h2 id="dTitre">Nouvelle affectation</h2><button class="x" id="dX" aria-label="Fermer">×</button></div>
   <div class="db">
-    <div><label for="dUser">Personne</label><select id="dUser"></select></div>
-    <details id="dMoreBox"><summary>Affecter aussi d’autres personnes</summary><div class="chips" id="dMore"></div></details>
+    <div><label for="dUser">Personne</label><input id="dUserQ" class="mini-search" type="search" placeholder="Filtrer la liste…" aria-label="Filtrer les personnes"><select id="dUser"></select></div>
+    <details id="dMoreBox"><summary>Affecter aussi d’autres personnes <small id="dMoreN"></small></summary>
+      <input id="dMoreQ" class="mini-search" type="search" placeholder="Rechercher (nom, spécialité)…" style="margin-top:8px">
+      <div class="chips"><button type="button" class="btn-secondary" id="dMoreAll" style="min-height:30px;padding:0 10px;font-size:12.5px">Cocher les résultats</button><button type="button" class="btn-secondary" id="dMoreNone" style="min-height:30px;padding:0 10px;font-size:12.5px">Tout décocher</button></div>
+      <div class="chips pick" id="dMore"></div></details>
     <div><label for="dPoste">Poste</label><select id="dPoste"></select></div>
     <div>
       <label for="dType">Durée / répétition</label>
@@ -198,64 +229,7 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
   <div class="df"><button class="btn-danger" id="dDel">Supprimer</button><button class="btn-secondary" id="dCancel">Annuler</button><button class="btn-primary" id="dSave">Enregistrer</button></div>
 </dialog>
 
-<!-- ===== MODALE RÉUNION PRO STYLE ===== -->
-<dialog id="dlgEv">
-  <div class="dh"><h2 id="eTitreDlg">Nouvelle réunion</h2><button class="x" id="eX" aria-label="Fermer">×</button></div>
-  <div class="db">
-    <div class="two">
-      <div><label for="eCat">Type</label>
-        <select id="eCat">
-          <option value="reunion">Réunion</option>
-          <option value="staff">Staff / relève</option>
-          <option value="formation">Formation</option>
-          <option value="autre">Autre événement</option>
-        </select>
-      </div>
-      <div><label for="eTitre">Titre de la réunion</label><input id="eTitre" type="text" placeholder="Ex. Réunion de service"></div>
-    </div>
-    <div class="two">
-      <div><label for="eDateDebut">Du</label><input id="eDateDebut" type="date"></div>
-      <div><label for="eDateFin">Au (inclus)</label><input id="eDateFin" type="date"></div>
-    </div>
-    <div class="two">
-      <div><label for="eStart">Heure de début</label><input id="eStart" type="time" value="14:00"></div>
-      <div><label for="eEnd">Heure de fin</label><input id="eEnd" type="time" value="15:00"></div>
-    </div>
-    <div>
-      <label for="eMode">Modalité</label>
-      <select id="eMode">
-        <option value="presentiel">Sur place (présentiel)</option>
-        <option value="distanciel">En distanciel (visioconférence)</option>
-        <option value="hybride">Hybride (sur place + distanciel)</option>
-      </select>
-    </div>
-    <div id="eLieuBox"><label for="eLieu">Lieu / salle</label><input id="eLieu" type="text" placeholder="Ex. Salle de staff Bâtiment C"></div>
-    <div id="eLienBox" hidden><label for="eLien">Lien de visioconférence</label><input id="eLien" type="url" placeholder="https://..."></div>
-    <div><label for="eDesc">Ordre du jour / description <small>(facultatif)</small></label><textarea id="eDesc" placeholder="Informations complémentaires…"></textarea></div>
-
-    <!-- PRO ATTENDEE PICKER SECTION -->
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span class="lbl" style="margin:0">Participants &amp; Disponibilités</span>
-        <label class="chk-inline" style="min-height:30px;font-size:12.5px"><input type="checkbox" id="eTous"> Toute l’équipe</label>
-      </div>
-      <div class="attendee-box" id="ePartSection">
-        <input class="attendee-search" id="eSearchPart" type="search" placeholder="Rechercher par nom ou spécialité..." style="min-height:38px">
-        <div class="attendee-list" id="attendeeListContainer"></div>
-      </div>
-    </div>
-
-    <!-- OPTIONS AVANCÉES -->
-    <details style="margin-top:4px"><summary>Options de réunion avancées</summary>
-      <div style="display:grid;gap:8px;margin-top:10px">
-        <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optInvite" checked> Autoriser les participants à inviter d'autres personnes</label>
-        <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optMaskList"> Masquer la liste des participants pour les invités</label>
-        <label class="chk-inline" style="background:transparent;border:0;padding:0"><input type="checkbox" id="optResponse" checked> Demander une réponse (RSVP Oui / Non / Peut-être)</label>
-      </div>
-    </details>
-  </div>
-  <div class="df"><button class="btn-danger" id="eDel">Supprimer la réunion</button><button class="btn-secondary" id="eCancel">Annuler</button><button class="btn-primary" id="eSave">Envoyer les invitations</button></div>
-</dialog>
+<!-- La modale de réunion est fournie par reunions.js -->
 
 <dialog id="dlgP">
   <div class="dh"><h2>Durée d’un rendez-vous</h2><button class="x" id="pX" aria-label="Fermer">×</button></div>
@@ -269,6 +243,7 @@ details .chips{margin-top:8px;max-height:150px;overflow:auto}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initReunions, quand, premiereDate, resumeRSVP, CATS as EV_CATS_FULL } from "./reunions.js";
 import { getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app);
@@ -295,7 +270,11 @@ const POSTES=[
 const P=k=>POSTES.find(p=>p.k===k)||POSTES[POSTES.length-1];
 const EV_CATS={reunion:'Réunion',staff:'Staff',formation:'Formation',autre:'Événement'};
 
-let users=[],affs=[],evts=[],dur=20,medecin={},view='week',anchor=new Date(),hid=new Set(),editId=null,editEvId=null,unsubA=null,unsubE=null,page=0,currentVolet='aff';
+let users=[],affs=[],evts=[],dur=20,medecin={},view='week',anchor=new Date(),hid=new Set(),editId=null,unsubA=null,unsubE=null,page=0,currentVolet='aff';
+const pref=(k,d)=>{try{const v=localStorage.getItem('aff_'+k);return v===null?d:v}catch(e){return d}};
+const setPref=(k,v)=>{try{localStorage.setItem('aff_'+k,v)}catch(e){}};
+let mode=pref('mode',''),compact=pref('dens','')==='c',pageSize=+pref('psize',50)||50,grouper=pref('group','1')==='1',moreSel=new Set();
+const collapsed=new Set(),ouverts=new Set();
 
 const ORIGINE_PARENT_BULLE="*";
 const BULLE={OK:"succes",ERR:"erreur",WARN:"avertissement",INFO:"info"};
@@ -323,6 +302,7 @@ onAuthStateChanged(auth,async user=>{
     const s=await getDoc(doc(db,"medecins",user.uid));
     if(!s.exists()){window.masquerLoader();afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.",BULLE.ERR);return}
     const data=s.data();medecin={...data,uid:user.uid};$('#who').textContent=data.nom||"";
+    const droitRDV=!!(data.pages&&data.pages.creerRDV===true);$('#bNewEv').hidden=!droitRDV;$('#roEv').hidden=droitRDV;
     const pg=location.pathname.substring(location.pathname.lastIndexOf("/")+1).replace(".html","");
     if(!(data.pages||{})[pg]){window.masquerLoader();$('#modal-no-access').style.display="flex";return}
     $('#gate').hidden=true;$('#voletAff').hidden=false;
@@ -355,11 +335,11 @@ async function charger(){
   const [u,c]=await Promise.all([getDocs(collection(db,'medecins')),getDoc(doc(db,'rdv-config','consultations'))]);
   users=u.docs.map(d=>({uid:d.id,nom:d.data().nom||d.id,specialite:d.data().specialite||''})).sort((x,y)=>x.nom.localeCompare(y.nom,'fr'));
   dur=c.exists()&&c.data().dur?+c.data().dur:20;$('#dur').value=dur;
+  if(!mode)mode=users.length>30?'poste':'pers';
 
   const specs=[...new Set(users.map(x=>x.specialite).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
   $('#fSpec').innerHTML='<option value="">Toutes les spécialités</option>'+specs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   $('#fPoste').innerHTML='<option value="">Tous les postes</option>'+POSTES.map(p=>`<option value="${p.k}">${esc(p.l)}</option>`).join('');
-  $('#dUser').innerHTML=users.map(x=>`<option value="${esc(x.uid)}">${esc(x.nom)}${x.specialite?' — '+esc(x.specialite):''}</option>`).join('');
   $('#dPoste').innerHTML=POSTES.map(p=>`<option value="${p.k}">${esc(p.l)}${p.rdv?' (ouvre des rendez-vous)':''}</option>`).join('');
   $('#dDays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<label><input type="checkbox" value="${d}">${JOURS[d]}</label>`).join('');
 
@@ -396,7 +376,7 @@ const chip=a=>{
   const p=P(a.poste);
   const tag=a.jours?' ↻':(a.dateFin&&a.dateFin!==a.date?' ⇄':'');
   const per=a.dateFin&&a.dateFin!==a.date?` (du ${a.date} au ${a.dateFin})`:(a.jours?' (chaque semaine)':'');
-  return `<button class="ca" data-id="${a.id}" style="--c:${p.c};--bg:${p.bg}" title="${esc(nomDe(a.uid)+' · '+(a.posteLabel||p.l)+' '+a.start+'–'+a.end+per)}"><b>${esc(a.start)}–${esc(a.end)}</b> ${esc(a.posteLabel||p.l)}${tag}</button>`;
+  return `<button class="ca" data-id="${a.id}" style="--c:${p.c};--bg:${p.bg}" title="${esc(nomDe(a.uid)+' · '+(a.posteLabel||p.l)+' '+a.start+'–'+a.end+per)}"><b>${hh(a.start)}–${hh(a.end)}</b> ${esc(a.posteLabel||p.l)}${tag}</button>`;
 };
 const evChip=e=>{
   const ico=e.mode==='distanciel'?'💻':(e.mode==='hybride'?'💻📍':'📍');
@@ -404,33 +384,38 @@ const evChip=e=>{
   return `<button class="ca" data-id-ev="${e.id}" style="--c:var(--ev);--bg:var(--ev-soft)" title="${esc((EV_CATS[e.cat]||'Réunion')+' : '+e.titre+' · '+e.start+'–'+e.end+(lieu?' · '+lieu:''))}"><b>${esc(e.start)}–${esc(e.end)}</b> ${ico} ${esc(e.titre)}</button>`;
 };
 
+const FILL=(arr,fn)=>arr.map(fn).join('');
+function filtrerUsers(dayKeys){
+  const q=norm($('#q').value),fSpec=$('#fSpec').value,fPoste=$('#fPoste').value,onlyAff=$('#fOnlyAff').checked,noAff=$('#fNoAff').checked;
+  return users.filter(u=>{
+    if(q&&!norm(u.nom+' '+u.specialite).includes(q))return false;
+    if(fSpec&&u.specialite!==fSpec)return false;
+    const has=dayKeys.some(k=>affs.some(a=>a.uid===u.uid&&applique(a,k)));
+    if(fPoste&&!dayKeys.some(k=>affs.some(a=>a.uid===u.uid&&a.poste===fPoste&&applique(a,k))))return false;
+    if(onlyAff&&!has)return false;
+    if(noAff&&has)return false;
+    return true;
+  });
+}
+const hh=t=>{const[a,b]=String(t).split(':');return(+a)+'h'+(b&&b!=='00'?b:'')};
+const nomCourt=n=>{const p=String(n).trim().split(/\s+/);return p.length>1?p[0]+' '+p.slice(1).map(x=>x[0]).join('')+'.':n};
+const ppChip=a=>{const p=P(a.poste);return `<button class="pp" data-id="${a.id}" style="--c:${p.c};--bg:${p.bg}" title="${esc(nomDe(a.uid)+' · '+(a.posteLabel||p.l)+' '+a.start+'–'+a.end)}"><span>${esc(nomDe(a.uid))}</span><small>${hh(a.start)}–${hh(a.end)}</small></button>`};
+
 function rendre(){
   if($('#voletAff').hidden)return;
   const days=plage(),dayKeys=days.map(iso),today=iso(new Date()),L={day:'numeric',month:'short'};
   $('#v-week').classList.toggle('on',view==='week');$('#v-day').classList.toggle('on',view==='day');$('#jour').value=iso(anchor);
+  $('#m-pers').classList.toggle('on',mode==='pers');$('#m-poste').classList.toggle('on',mode==='poste');
+  $('#bDens').classList.toggle('on',compact);$('#plan').classList.toggle('dens-c',compact);
+  $('#lGroup').hidden=mode!=='pers';
   $('#titre').textContent=view==='day'?days[0].toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):days[0].toLocaleDateString('fr-FR',L)+' – '+days[6].toLocaleDateString('fr-FR',{...L,year:'numeric'});
   $('#legend').innerHTML=POSTES.map(p=>`<button class="chip" style="--c:${p.c};--bg:${p.bg}" data-k="${p.k}" aria-pressed="${!hid.has(p.k)}">${esc(p.l)}</button>`).join('')
     +'<button class="chip" style="--c:var(--ev);--bg:var(--ev-soft)">Réunions</button>';
 
-  const q=norm($('#q').value),fSpec=$('#fSpec').value,fPoste=$('#fPoste').value,onlyAff=$('#fOnlyAff').checked;
-  const filtered=users.filter(u=>{
-    if(q && !norm(u.nom+' '+u.specialite).includes(q)) return false;
-    if(fSpec && u.specialite!==fSpec) return false;
-    if(fPoste && !dayKeys.some(k=>affs.some(a=>a.uid===u.uid && a.poste===fPoste && applique(a,k)))) return false;
-    if(onlyAff && !dayKeys.some(k=>affs.some(a=>a.uid===u.uid && applique(a,k)))) return false;
-    return true;
-  });
-
-  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
-  if(page>=totalPages) page=totalPages-1;
-  if(page<0) page=0;
-  const slice=filtered.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE);
-  $('#pageInfo').textContent=filtered.length?`${page*PAGE_SIZE+1}–${Math.min(filtered.length,(page+1)*PAGE_SIZE)} sur ${filtered.length}`:'0 personne';
-  $('#pPrev').disabled=page<=0; $('#pNext').disabled=page>=totalPages-1;
-
-  const cal=$('#plan');
-  cal.style.gridTemplateColumns='220px repeat(7,minmax(132px,1fr))';
-  let h='<div class="gh corner">Équipe ('+filtered.length+')</div>';
+  const filtered=filtrerUsers(dayKeys),nb=days.length,cal=$('#plan');
+  const tpl=`${compact?170:220}px repeat(${nb},minmax(${compact?(nb>1?100:300):(nb>1?140:360)}px,1fr))`;
+  cal.style.gridTemplateColumns=tpl;
+  let h=`<div class="gh corner">${mode==='poste'?'Postes':'Équipe'} (${filtered.length})</div>`;
   h+=days.map(d=>`<div class="gh ${iso(d)===today?'today':''}">${d.toLocaleDateString('fr-FR',{weekday:'short'})}<b>${d.getDate()}</b></div>`).join('');
   h+='<div class="nm cov"><b>Médecins en consultation</b><small>places de RDV</small></div>'+days.map(d=>{
     const c=couverture(iso(d)),max=Math.max(0,...c.map(s=>s.n)),places=c.reduce((t,s)=>t+s.n,0);
@@ -439,40 +424,96 @@ function rendre(){
   h+='<div class="nm" style="background:#f8f5ff"><b>Réunions &amp; Staffs</b><small>service</small></div>'+days.map(d=>{
     const k=iso(d);return `<div class="cell" style="background:#f8f5ff" data-ev-date="${k}">${evsDuJour(k).map(evChip).join('')}</div>`;
   }).join('');
-  h+=slice.map(u=>`<div class="nm"><b>${esc(u.nom)}</b><small>${esc(u.specialite)}</small></div>`+days.map(d=>{
-    const k=iso(d);return `<div class="cell ${k===today?'today':''}" data-u="${esc(u.uid)}" data-d="${k}">${inst(u.uid,k).map(chip).join('')}</div>`;
-  }).join('')).join('');
-  if(!slice.length)h+='<div class="vide" style="grid-column:1/-1">Aucune personne ne correspond.</div>';
+
+  if(mode==='poste') h+=rendrePoste(filtered,days);
+  else h+=rendrePersonnes(filtered,days,today);
   cal.innerHTML=h;
   majMaintenant();
 }
 
-function rendreEvtList(){
-  const q=norm($('#eSearchList')?.value||''),cat=$('#eFilterCat')?.value||'';
-  const list=evts.filter(e=>{
-    if(q && !norm(e.titre+' '+(e.lieu||'')).includes(q))return false;
-    if(cat && e.cat!==cat)return false;
-    return true;
-  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-
-  const box=$('#evtList');
-  if(!list.length){box.innerHTML='<div class="vide">Aucune réunion trouvée.</div>';return;}
-  box.innerHTML=list.map(e=>{
-    const ico=e.mode==='distanciel'?'💻':(e.mode==='hybride'?'💻📍':'📍');
-    const nb=(e.participantsMandatory||[]).length+(e.participantsOptional||[]).length;
-    return `<div class="meeting-card" onclick="ouvrirEvDlgParId('${e.id}')">
-      <div>
-        <span class="pill" style="--c:var(--ev);--bg:var(--ev-soft);margin-bottom:4px">${esc(EV_CATS[e.cat]||'Réunion')}</span>
-        <h3 style="font-size:16px;font-weight:700">${esc(e.titre)}</h3>
-        <p style="font-size:13px;color:var(--muted)">📅 ${e.date}${e.dateFin&&e.dateFin!==e.date?' au '+e.dateFin:''} · ⏰ ${e.start}–${e.end} · ${ico} ${esc(e.lieu||e.mode)}</p>
-      </div>
-      <div style="text-align:right">
-        <span class="pill">👥 ${nb} invité${nb>1?'s':''}</span>
-      </div>
-    </div>`;
+function rendrePersonnes(filtered,days,today){
+  const dayKeys=days.map(iso),group=grouper;
+  const list=filtered.slice();
+  if(group)list.sort((a,b)=>(a.specialite?0:1)-(b.specialite?0:1)||(a.specialite||'').localeCompare(b.specialite||'','fr')||a.nom.localeCompare(b.nom,'fr'));
+  const gname=u=>u.specialite||'Sans spécialité',gcount=new Map();
+  list.forEach(u=>{const g=gname(u),o=gcount.get(g)||{n:0,aff:0};o.n++;if(dayKeys.some(k=>affs.some(a=>a.uid===u.uid&&applique(a,k))))o.aff++;gcount.set(g,o)});
+  const rows=[];let cur=null;
+  list.forEach(u=>{
+    const g=gname(u);
+    if(group&&g!==cur){cur=g;rows.push({t:'g',g})}
+    if(!(group&&collapsed.has(g)))rows.push({t:'u',u});
+  });
+  const nUsers=rows.filter(r=>r.t==='u').length,PS=pageSize;
+  // pagination sur les lignes « personne » (les en-têtes de groupe suivent)
+  const pages=Math.max(1,Math.ceil(rows.length/PS));
+  if(page>=pages)page=pages-1;if(page<0)page=0;
+  let slice=rows.slice(page*PS,(page+1)*PS);
+  if(group&&slice.length&&slice[0].t==='u'){const g=gname(slice[0].u);slice=[{t:'g',g},...slice]}
+  $('#pageInfo').textContent=filtered.length?`${filtered.length} personne${filtered.length>1?'s':''}${pages>1?` · page ${page+1}/${pages}`:''}`:'0 personne';
+  $('#pPrev').disabled=page<=0;$('#pNext').disabled=page>=pages-1;
+  let h=slice.map(r=>{
+    if(r.t==='g'){const o=gcount.get(r.g)||{n:0,aff:0},shut=collapsed.has(r.g);
+      return `<div class="grp ${shut?'shut':''}" data-g="${esc(r.g)}"><span><i class="car">▾</i>${esc(r.g)} <em>· ${o.n} pers. · ${o.aff} affecté${o.aff>1?'s':''}</em></span></div>`}
+    const u=r.u;
+    return `<div class="nm" title="${esc(u.nom+(u.specialite?' — '+u.specialite:''))}"><b>${esc(u.nom)}</b><small>${esc(u.specialite)}</small></div>`+days.map(d=>{
+      const k=iso(d);return `<div class="cell ${k===today?'today':''}" data-u="${esc(u.uid)}" data-d="${k}">${inst(u.uid,k).map(chip).join('')}</div>`;
+    }).join('');
   }).join('');
+  if(!filtered.length)h+='<div class="vide" style="grid-column:1/-1">Aucune personne ne correspond.</div>';
+  return h;
 }
-window.ouvrirEvDlgParId=id=>ouvrirEvDlg(evts.find(x=>x.id===id));
+
+function rendrePoste(filtered,days){
+  const ids=new Set(filtered.map(u=>u.uid)),today=iso(new Date()),maxV=compact?3:5;
+  $('#pageInfo').textContent=`${filtered.length} personne${filtered.length>1?'s':''}`;$('#pPrev').disabled=$('#pNext').disabled=true;
+  const fPoste=$('#fPoste').value;
+  let h='';
+  POSTES.filter(p=>!hid.has(p.k)&&(!fPoste||fPoste===p.k)).forEach(p=>{
+    const per=days.map(d=>{const k=iso(d);return affs.filter(a=>a.poste===p.k&&ids.has(a.uid)&&applique(a,k)).sort((a,b)=>tmin(a.start)-tmin(b.start)||nomDe(a.uid).localeCompare(nomDe(b.uid),'fr'))});
+    const uniq=new Set(per.flat().map(a=>a.uid)).size;
+    if(!uniq&&p.k!=='consultation'&&p.k!=='urgences')return;
+    h+=`<div class="nm poste"><i style="background:${p.c}"></i><div><b>${esc(p.l)}</b><small>${uniq} personne${uniq>1?'s':''} sur la période</small></div></div>`
+      +days.map((d,i)=>{
+        const k=iso(d),L=per[i],key=p.k+'|'+k,open=ouverts.has(key),vis=open?L:L.slice(0,maxV);
+        return `<div class="cell ${k===today?'today':''}"><div class="cnt" style="--c:${p.c};--bg:${p.bg}"><b>${L.length}</b><button class="add" data-add-p="${p.k}" data-d="${k}" title="Affecter quelqu’un à ${esc(p.l)}">+</button></div>`
+          +vis.map(ppChip).join('')+(L.length>maxV?`<button class="more" data-more="${key}">${open?'Réduire':'+ '+(L.length-maxV)+' autres'}</button>`:'')+'</div>';
+      }).join('');
+  });
+  // non affectés
+  const sans=days.map(d=>{const k=iso(d);return filtered.filter(u=>!affs.some(a=>a.uid===u.uid&&applique(a,k)))});
+  h+=`<div class="nm poste" style="background:#fafcfe"><i style="background:#cbd5df"></i><div><b>Non affectés</b><small>à planifier</small></div></div>`
+    +days.map((d,i)=>{
+      const k=iso(d),L=sans[i],key='sans|'+k,open=ouverts.has(key),vis=open?L:L.slice(0,maxV);
+      return `<div class="cell ${k===today?'today':''}" style="background:#fafcfe"><div class="cnt" style="--c:#586a7e;--bg:#eef2f6"><b>${L.length}</b></div>`
+        +vis.map(u=>`<button class="pp un" data-u="${esc(u.uid)}" data-d="${k}" title="Cliquer pour affecter"><span>${esc(u.nom)}</span><small>＋</small></button>`).join('')
+        +(L.length>maxV?`<button class="more" data-more="${key}">${open?'Réduire':'+ '+(L.length-maxV)+' autres'}</button>`:'')+'</div>';
+    }).join('');
+  if(!filtered.length)h+='<div class="vide" style="grid-column:1/-1">Aucune personne ne correspond.</div>';
+  return h;
+}
+
+function rendreEvtList(){
+  const q=norm($('#eSearchList')?.value||''),cat=$('#eFilterCat')?.value||'',box=$('#evtList'),auj=iso(new Date());
+  const list=evts.filter(e=>{
+    if(q&&!norm(e.titre+' '+(e.lieu||'')+' '+(e.creeParNom||'')).includes(q))return false;
+    if(cat&&e.cat!==cat)return false;
+    return true;
+  }).map(e=>({e,k:premiereDate(e),fin:e.jours?(e.jusqu||'9999'):(e.dateFin||e.date||'')}));
+  if(!list.length){box.innerHTML='<div class="vide">Aucune réunion trouvée.</div>';return}
+  const a=list.filter(x=>x.fin>=auj).sort((x,y)=>x.k.localeCompare(y.k)||x.e.start.localeCompare(y.e.start));
+  const p=list.filter(x=>x.fin<auj).sort((x,y)=>y.k.localeCompare(x.k));
+  const card=({e})=>{
+    const ico=e.mode==='distanciel'?'💻':(e.mode==='hybride'?'💻📍':'📍'),c=resumeRSVP(e);
+    const nb=e.tous?'Toute l’équipe':((e.participants||[]).length+' invité'+((e.participants||[]).length>1?'s':''));
+    return `<div class="meeting-card" onclick="ouvrirEvDlgParId('${e.id}')">
+      <div style="min-width:0"><span class="pill" style="--c:var(--ev);--bg:var(--ev-soft);margin-bottom:4px">${esc(EV_CATS[e.cat]||'Réunion')}${e.jours?' · ↻':''}</span>
+        <h3 style="font-size:16px;font-weight:700;margin:2px 0">${esc(e.titre)}</h3>
+        <p style="font-size:13px;color:var(--muted)">📅 ${esc(quand(e))} · ⏰ ${esc(e.start)}–${esc(e.end)} · ${ico} ${esc(e.mode==='distanciel'?'Distanciel':(e.lieu||'Sur place'))}</p></div>
+      <div style="text-align:right;display:grid;gap:4px;justify-items:end"><span class="pill">👥 ${esc(nb)}</span>${e.optResponse===false?'':`<span class="pill" title="Oui / Peut-être / Non / Sans réponse">🟢${c.oui} 🟡${c.pe} 🔴${c.non} ⏳${c.att}</span>`}</div></div>`;
+  };
+  box.innerHTML=(a.length?`<h4 class="mh">À venir · ${a.length}</h4>`+a.map(card).join(''):'')+(p.length?`<h4 class="mh">Passées · ${p.length}</h4>`+p.map(card).join(''):'');
+}
+window.ouvrirEvDlgParId=id=>{const ev=evts.find(x=>x.id===id);if(ev)R.ouvrir(ev,{date:iso(anchor)})};
 
 function majMaintenant(){
   const n=new Date(),k=iso(n),m=n.getHours()*60+n.getMinutes();
@@ -490,22 +531,49 @@ $('#v-day').onclick=()=>{view='day';rendre()};
 $('#q').oninput=()=>{page=0;rendre()};
 $('#fSpec').onchange=()=>{page=0;rendre()};
 $('#fPoste').onchange=()=>{page=0;rendre()};
-$('#fOnlyAff').onchange=()=>{page=0;rendre()};
+$('#fOnlyAff').onchange=()=>{if($('#fOnlyAff').checked)$('#fNoAff').checked=false;page=0;rendre()};
+$('#fNoAff').onchange=()=>{if($('#fNoAff').checked)$('#fOnlyAff').checked=false;page=0;rendre()};
+$('#fGroup').checked=grouper;$('#fGroup').onchange=e=>{grouper=e.target.checked;setPref('group',grouper?'1':'0');page=0;rendre()};
+$('#pSize').value=String(pageSize);$('#pSize').onchange=e=>{pageSize=+e.target.value;setPref('psize',pageSize);page=0;rendre()};
+$('#m-pers').onclick=()=>{mode='pers';setPref('mode',mode);page=0;rendre()};
+$('#m-poste').onclick=()=>{mode='poste';setPref('mode',mode);page=0;rendre()};
+$('#bDens').onclick=()=>{compact=!compact;setPref('dens',compact?'c':'');rendre()};
 $('#pPrev').onclick=()=>{if(page>0){page--;rendre();$('#wrap').scrollTop=0}};
 $('#pNext').onclick=()=>{page++;rendre();$('#wrap').scrollTop=0};
 $('#eSearchList').oninput=rendreEvtList;
 $('#eFilterCat').onchange=rendreEvtList;
 
 $('#plan').onclick=e=>{
-  const evBtn=e.target.closest('[data-id-ev]');if(evBtn)return ouvrirEvDlg(evts.find(x=>x.id===evBtn.dataset.idEv));
-  const evCell=e.target.closest('[data-ev-date]');if(evCell)return ouvrirEvDlg(null,{date:evCell.dataset.evDate});
+  const gh=e.target.closest('[data-g]');if(gh){const g=gh.dataset.g;collapsed.has(g)?collapsed.delete(g):collapsed.add(g);return rendre()}
+  const mo=e.target.closest('[data-more]');if(mo){const k=mo.dataset.more;ouverts.has(k)?ouverts.delete(k):ouverts.add(k);return rendre()}
+  const ad=e.target.closest('[data-add-p]');if(ad)return ouvrirDlg(null,{date:ad.dataset.d,poste:ad.dataset.addP});
+  const evBtn=e.target.closest('[data-id-ev]');if(evBtn){const ev=evts.find(x=>x.id===evBtn.dataset.idEv);return ev&&R.ouvrir(ev,{date:iso(anchor)})}
+  const evCell=e.target.closest('[data-ev-date]');if(evCell)return R.ouvrir(null,{date:evCell.dataset.evDate});
   const c=e.target.closest('[data-id]');if(c)return ouvrirDlg(affs.find(a=>a.id===c.dataset.id));
   const z=e.target.closest('[data-u][data-d]');if(z)ouvrirDlg(null,{uid:z.dataset.u,date:z.dataset.d});
 };
 $('#bNew').onclick=()=>ouvrirDlg(null,{type:'date'});
-$('#bNewEv').onclick=()=>ouvrirEvDlg(null,{date:iso(anchor)});
+$('#bNewEv').onclick=()=>R.ouvrir(null,{date:iso(anchor)});
 
 /* Fenêtre Affectation */
+function remplirUser(sel){
+  const q=norm($('#dUserQ').value),cur=sel||$('#dUser').value;
+  const L=users.filter(x=>!q||norm(x.nom+' '+x.specialite).includes(q)||x.uid===cur);
+  $('#dUser').innerHTML=L.map(x=>`<option value="${esc(x.uid)}">${esc(x.nom)}${x.specialite?' — '+esc(x.specialite):''}</option>`).join('');
+  if(L.some(x=>x.uid===cur))$('#dUser').value=cur;
+}
+function remplirMore(){
+  const q=norm($('#dMoreQ').value),main=$('#dUser').value;
+  const L=users.filter(x=>x.uid!==main&&(!q||norm(x.nom+' '+x.specialite).includes(q)));
+  $('#dMore').innerHTML=L.slice(0,80).map(x=>`<label><input type="checkbox" value="${esc(x.uid)}" ${moreSel.has(x.uid)?'checked':''}>${esc(x.nom)}</label>`).join('')+(L.length>80?`<span class="hint">+ ${L.length-80} autres — affinez la recherche</span>`:'')||'<span class="hint">Aucun résultat</span>';
+  $('#dMoreN').textContent=moreSel.size?`(${moreSel.size} sélectionné${moreSel.size>1?'s':''})`:'';
+}
+$('#dUserQ').oninput=()=>remplirUser();
+$('#dUser').onchange=remplirMore;
+$('#dMoreQ').oninput=remplirMore;
+$('#dMore').onchange=e=>{const i=e.target;if(i.type==='checkbox'){i.checked?moreSel.add(i.value):moreSel.delete(i.value);$('#dMoreN').textContent=moreSel.size?`(${moreSel.size} sélectionné${moreSel.size>1?'s':''})`:''}};
+$('#dMoreAll').onclick=()=>{$('#dMore').querySelectorAll('input').forEach(i=>moreSel.add(i.value));remplirMore()};
+$('#dMoreNone').onclick=()=>{moreSel.clear();remplirMore()};
 function syncType(){
   const t=$('#dType').value;
   $('#bDate').hidden=t!=='date';
@@ -517,10 +585,11 @@ function ouvrirDlg(a,pre={}){
   editId=a?.id||null;
   const date=pre.date||iso(anchor);
   $('#dTitre').textContent=a?'Modifier l’affectation':'Nouvelle affectation';
-  $('#dUser').value=a?.uid||pre.uid||users[0]?.uid||'';$('#dUser').disabled=!!a;
-  $('#dMore').innerHTML=users.map(x=>`<label><input type="checkbox" value="${esc(x.uid)}">${esc(x.nom)}</label>`).join('');
+  $('#dUserQ').value='';$('#dUserQ').hidden=!!a;
+  remplirUser(a?.uid||pre.uid||users[0]?.uid||'');$('#dUser').disabled=!!a;
+  moreSel=new Set();$('#dMoreQ').value='';remplirMore();
   $('#dMoreBox').hidden=!!a;$('#dMoreBox').open=false;
-  $('#dPoste').value=a?.poste||'consultation';
+  $('#dPoste').value=a?.poste||pre.poste||'consultation';
   const mode=a?(a.jours?'hebdo':(a.dateFin&&a.dateFin!==a.date?'plage':'date')):(pre.type||'date');
   $('#dType').value=mode;syncType();
   $('#dDate').value=a?.date||date;
@@ -548,7 +617,7 @@ const uids = editId
   ? [$('#dUser').value]
   : [...new Set([
       $('#dUser').value,
-      ...[...document.querySelectorAll('#dMore input:checked')].map(i => i.value)
+      ...moreSel
     ])];  const conflits=uids.filter(u=>affs.some(a=>a.uid===u&&a.id!==editId&&seChevauchent(a,base))).map(nomDe);
   if(conflits.length)return afficherBulle('Chevauchement : '+conflits.join(', '),BULLE.ERR);
   $('#dSave').disabled=true;
@@ -564,164 +633,15 @@ $('#dDel').onclick=async()=>{
   await deleteDoc(doc(db,'affectations',editId));await miroir();$('#dlg').close();afficherBulle('Supprimé',BULLE.OK);
 };
 
-/* --- PRO ATTENDEE PICKER SCRIPT --- */
-let selectedMandatory = new Set();
-let selectedOptional = new Set();
-
-function renderAttendeePicker(){
-  const queryText = norm($('#eSearchPart').value);
-  const dateDebut = $('#eDateDebut').value;
-  const hStart = $('#eStart').value;
-  const hEnd = $('#eEnd').value;
-
-  const container = $('#attendeeListContainer');
-  const filteredUsers = users.filter(u => norm(u.nom + ' ' + u.specialite).includes(queryText));
-
-  if(!filteredUsers.length){
-    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:13px">Aucun membre trouvé</div>';
-    return;
-  }
-
-  container.innerHTML = filteredUsers.map(u => {
-    const isMand = selectedMandatory.has(u.uid);
-    const isOpt = selectedOptional.has(u.uid);
-    
-    let isBusy = false;
-    if(dateDebut && hStart && hEnd){
-      isBusy = affs.some(a => a.uid === u.uid && applique(a, dateDebut) && tmin(a.start) < tmin(hEnd) && tmin(hStart) < tmin(a.end)) ||
-               evts.some(ev => (ev.participants||[]).includes(u.uid) && applique(ev, dateDebut) && tmin(ev.start) < tmin(hEnd) && tmin(hStart) < tmin(ev.end) && ev.id !== editEvId);
-    }
-
-    const badgeHtml = isBusy 
-      ? `<span class="badge-status badge-busy">🔴 Occupé(e)</span>` 
-      : `<span class="badge-status badge-free">🟢 Libre</span>`;
-
-    return `
-      <div class="attendee-item" data-uid="${esc(u.uid)}">
-        <div class="att-info">
-          <div class="att-name">${esc(u.nom)}</div>
-          <div class="att-sub">${esc(u.specialite || 'Personnel')} · ${badgeHtml}</div>
-        </div>
-        <div class="role-toggle">
-          <button type="button" class="role-btn ${isMand?'active-mand':''}" onclick="toggleAttendeeRole('${u.uid}','mand')">Obligatoire</button>
-          <button type="button" class="role-btn ${isOpt?'active-opt':''}" onclick="toggleAttendeeRole('${u.uid}','opt')">Facultatif</button>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-window.toggleAttendeeRole=(uid, role)=>{
-  if(role==='mand'){
-    if(selectedMandatory.has(uid)){ selectedMandatory.delete(uid); }
-    else { selectedMandatory.add(uid); selectedOptional.delete(uid); }
-  } else {
-    if(selectedOptional.has(uid)){ selectedOptional.delete(uid); }
-    else { selectedOptional.add(uid); selectedMandatory.delete(uid); }
-  }
-  renderAttendeePicker();
-};
-
-$('#eSearchPart').oninput = renderAttendeePicker;
-$('#eDateDebut').onchange = renderAttendeePicker;
-$('#eStart').onchange = renderAttendeePicker;
-$('#eEnd').onchange = renderAttendeePicker;
-$('#eTous').onchange = e => {
-  const checked = e.target.checked;
-  $('#ePartSection').style.opacity = checked ? '.4' : '1';
-  $('#ePartSection').style.pointerEvents = checked ? 'none' : 'auto';
-};
-
-function syncEvMode(){
-  const m=$('#eMode').value;
-  $('#eLieuBox').hidden=m==='distanciel';
-  $('#eLienBox').hidden=m==='presentiel';
-}
-$('#eMode').onchange=syncEvMode;
-
-function ouvrirEvDlg(ev){
-  editEvId=ev?.id||null;
-  const d=iso(anchor);
-  $('#eTitreDlg').textContent=ev?'Modifier la réunion':'Nouvelle réunion';
-  $('#eCat').value=ev?.cat||'reunion';
-  $('#eTitre').value=ev?.titre||'';
-  $('#eDateDebut').value=ev?.date||d;
-  $('#eDateFin').value=ev?.dateFin||ev?.date||d;
-  $('#eStart').value=ev?.start||'14:00';
-  $('#eEnd').value=ev?.end||'15:00';
-  $('#eMode').value=ev?.mode||'presentiel';syncEvMode();
-  $('#eLieu').value=ev?.lieu||'';
-  $('#eLien').value=ev?.lien||'';
-  $('#eDesc').value=ev?.description||'';
-  
-  const tous=ev?!!ev.tous:false;
-  $('#eTous').checked=tous;
-  $('#ePartSection').style.opacity=tous?'.4':'1';
-  $('#ePartSection').style.pointerEvents=tous?'none':'auto';
-
-  selectedMandatory = new Set(ev?.participantsMandatory||[]);
-  selectedOptional = new Set(ev?.participantsOptional||[]);
-
-  $('#optInvite').checked=ev?.optInvite??true;
-  $('#optMaskList').checked=ev?.optMaskList??false;
-  $('#optResponse').checked=ev?.optResponse??true;
-
-  $('#eDel').hidden=!ev;
-  renderAttendeePicker();
-  $('#dlgEv').showModal();
-}
-$('#eX').onclick=$('#eCancel').onclick=()=>$('#dlgEv').close();
-
-$('#eSave').onclick=async()=>{
-  const titre=$('#eTitre').value.trim();
-  const d1=$('#eDateDebut').value,d2=$('#eDateFin').value||d1;
-  const s=$('#eStart').value,e=$('#eEnd').value;
-  const mode=$('#eMode').value;
-  const tous=$('#eTous').checked;
-
-  const mand=[...selectedMandatory];
-  const opt=[...selectedOptional];
-
-  if(!titre)return afficherBulle('Saisissez un titre',BULLE.WARN);
-  if(!d1||d2<d1)return afficherBulle('Dates invalides',BULLE.WARN);
-  if(!s||!e||tmin(e)<=tmin(s))return afficherBulle('Horaires invalides',BULLE.WARN);
-
-  const allUids=[...new Set([...mand,...opt,medecin.uid])];
-  const payload={
-    cat:$('#eCat').value,
-    titre,
-    date:d1,
-    dateFin:d2!==d1?d2:null,
-    start:s,
-    end:e,
-    mode,
-    lieu:mode==='distanciel'?'':$('#eLieu').value.trim(),
-    lien:mode==='presentiel'?'':$('#eLien').value.trim(),
-    description:$('#eDesc').value.trim(),
-    tous,
-    participantsMandatory:mand,
-    participantsOptional:opt,
-    participants:allUids,
-    optInvite:$('#optInvite').checked,
-    optMaskList:$('#optMaskList').checked,
-    optResponse:$('#optResponse').checked,
-    responses:editEvId?(evts.find(x=>x.id===editEvId)?.responses||{}):{},
-    creePar:medecin.uid,
-    creeParNom:medecin.nom||''
-  };
-
-  $('#eSave').disabled=true;
-  try{
-    if(editEvId)await updateDoc(doc(db,'evenements',editEvId),payload);
-    else await addDoc(collection(db,'evenements'),{...payload,creeLe:serverTimestamp()});
-    $('#dlgEv').close();afficherBulle('Réunion enregistrée & invitations envoyées',BULLE.OK);
-  }catch(err){console.error(err);afficherBulle('Échec',BULLE.ERR)}
-  $('#eSave').disabled=false;
-};
-$('#eDel').onclick=async()=>{
-  if(!editEvId||!confirm('Supprimer cette réunion ?'))return;
-  try{await deleteDoc(doc(db,'evenements',editEvId));$('#dlgEv').close();afficherBulle('Supprimé',BULLE.OK)}
-  catch(err){afficherBulle('Échec',BULLE.ERR)}
-};
+/* ===== Moteur de réunions (création / modification : droit pages.creerRDV) ===== */
+const R=initReunions({
+  db,
+  getMe:()=>medecin,
+  getUsers:()=>users,
+  getAffs:()=>affs,
+  getEvts:()=>evts,
+  notify:afficherBulle
+});
 
 /* Param durées RDV */
 $('#bParam').onclick=()=>{$('#dur').value=dur;$('#dlgP').showModal()};
