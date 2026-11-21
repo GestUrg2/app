@@ -285,7 +285,7 @@ function ouvrirEvenement(id){
     if(ev.creePar&&!m.includes(ev.creePar)&&!ev.tous)list=ligne(ev.creePar,'organisateur')+list;
     h+=`<div class="fact"><label>Invités</label><div class="rsvp-sum"><span>🟢 ${c.oui}</span><span>🟡 ${c.pe}</span><span>🔴 ${c.non}</span><span>⏳ ${c.att}</span></div><div style="margin-top:8px">${list||'—'}</div></div>`;
   }
-  h+=`<button class="btn-sec" id="icsEv">📅 Ajouter à mon agenda (.ics)</button>`;
+  h+=`<button class="btn-sec" id="icsEv" style="display:none">📅 Ajouter à mon agenda (.ics)</button>`;
   if(peutCreer())h+=`<button class="btn-primary" onclick="modifierEv('${ev.id}')">Modifier / supprimer</button>`;
   box.hidden=false;box.innerHTML=h;
   $('#closeEv').onclick=()=>{box.hidden=true};

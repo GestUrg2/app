@@ -514,7 +514,7 @@ const EXPORTS = {
 async function renderUsers() {
   if (!can('droits')) return;
   const snap = await getDocs(collection(db, 'medecins'));
-  $('rolesHint').textContent = 'Rôles : ' + Object.values(ROLES).map(r => r.label).join(', ') + '. Les droits sont appliqués aussi côté serveur (règles Firestore).';
+  $('rolesHint').textContent = 'Rôles : ' + Object.values(ROLES).map(r => r.label).join(', ') + '.';
   $('usrBody').innerHTML = snap.docs.map(d => { const u = d.data(), r = u.compta?.role || 'lecteur';
     return `<tr data-uid="${esc(d.id)}"><td class="left">${esc(u.nom || d.id)}</td><td><input type="checkbox" class="uPage" ${u.pages?.[PAGE] ? 'checked' : ''}></td>
     <td><select class="uRole">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${k === r ? 'selected' : ''}>${v.label}</option>`).join('')}</select></td>
