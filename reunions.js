@@ -475,6 +475,7 @@ export function initReunions(o) {
 
   const changements = (a, b) => {
     const L = [];
+    const liste = x => [...new Set(x || [])].sort().join(',');
 
     if (a.titre !== b.titre) {
       L.push(`Titre : ${a.titre} → ${b.titre}`);
@@ -496,8 +497,18 @@ export function initReunions(o) {
       L.push('Lien visio modifié');
     }
 
-    if ((a.description || '') !== (b.description || '')) {
+    if ((a.description || '').trim() !== (b.description || '').trim()) {
       L.push('Ordre du jour modifié');
+    }
+
+    if (liste(a.participantsMandatory) !== liste(b.participantsMandatory)
+      || liste(a.participantsOptional) !== liste(b.participantsOptional)
+      || !!a.tous !== !!b.tous) {
+      L.push('Liste des participants modifiée');
+    }
+
+    if ((a.rappel || 0) !== (b.rappel || 0)) {
+      L.push('Rappel modifié');
     }
 
     return L;
@@ -534,11 +545,11 @@ export function initReunions(o) {
             detailReunion(apresEv, u),
             ref
           ));
-        } else if (chg.length) {
+        } else {
           envois.push(envoyer(
             u,
             '✏️ Réunion modifiée : ' + apresEv.titre,
-            'Modifications :\n• ' + chg.join('\n• ') + '\n\n'
+            'Modifications :\n• ' + (chg.length ? chg.join('\n• ') : 'Détails mis à jour') + '\n\n'
               + detailReunion(apresEv, u)
               + '\nModifiée par : ' + par,
             ref
@@ -1359,8 +1370,14 @@ export function initReunions(o) {
     return;
   }
 
-  const old = st.id
+  // Copie figée de la réunion AVANT modification : le listener Firestore peut
+  // mettre à jour l'objet d'origine dès l'updateDoc, ce qui masquerait les changements.
+  const oldRef = st.id
     ? evts().find(x => x.id === st.id)
+    : null;
+
+  const old = oldRef
+    ? JSON.parse(JSON.stringify(oldRef))
     : null;
 
   const mand = [...new Set(st.mand)].filter(Boolean);
@@ -1492,6 +1509,7 @@ export function initReunions(o) {
     // Envoi des notifications.
     // notifierReunion compare les anciens et nouveaux participants
     // pour éviter de renvoyer inutilement les invitations.
+    console.log('🔎 Avant :', old, '| Après :', reunionEnregistree);
     const resultatNotif = await notifierReunion(
       old,
       reunionEnregistree
