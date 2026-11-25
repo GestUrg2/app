@@ -1,4 +1,3 @@
-
 /* =====================================================================
    reunions.js — Moteur de réunions GestUrg2 (partagé Calendrier / Affectations)
    - Droit requis : pages.creerRDV === true (création, modification, suppression)
@@ -169,6 +168,25 @@ async function envoyerNotif(o, uid, titre, contenu, ref, nomDest) {
     date: serverTimestamp(),
     luPar: []
   });
+
+  // Push (même serveur que messagerie-envoi.js). Un échec ne doit pas
+  // faire échouer l'envoi du message Firestore déjà enregistré.
+  try {
+    await fetch(
+      'https://firebase-notification-server.onrender.com/send-notification-user',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: uid,
+          title: titre,
+          body: 'Ouvrez GestUrg2 pour le consulter !'
+        })
+      }
+    );
+  } catch (e) {
+    console.warn('Notification calendrier (push serveur) :', e);
+  }
 
   // Le message Firestore est persistant.
   // Le postMessage sert uniquement à prévenir le shell.
@@ -393,28 +411,36 @@ export function initReunions(o) {
     : ((ev.lieu || 'Non précisé') + (ev.mode === 'hybride' ? ' + visio' : ''));
 
 
-const destDe = ev => {
-  if (!ev) return [];
+// true  : l'organisateur reçoit aussi les notifications (pratique pour tester)
+  // false : seuls les autres participants sont notifiés
+  const NOTIFIER_ORGANISATEUR = true;
 
-  // Toute l'équipe : récupérer tous les utilisateurs
-  if (ev.tous === true) {
-    return [...new Set(
-      users()
-        .map(u => u.uid)
-        .filter(Boolean)
-    )].filter(u => u !== me().uid);
-  }
+  const destDe = ev => {
+    if (!ev) return [];
 
-  // Réunion ciblée : fusionner les trois listes
-  const liste = [
-    ...(ev.participants || []),
-    ...(ev.participantsMandatory || []),
-    ...(ev.participantsOptional || [])
-  ];
+    let liste;
 
-  return [...new Set(liste)]
-    .filter(uid => uid && uid !== me().uid);
-};
+    if (ev.tous === true) {
+      // Toute l'équipe
+      liste = users().map(u => u.uid);
+    } else {
+      // Réunion ciblée : fusion des trois listes
+      liste = [
+        ...(ev.participants || []),
+        ...(ev.participantsMandatory || []),
+        ...(ev.participantsOptional || [])
+      ];
+    }
+
+    // L'organisateur de l'événement (creePar) ou, à défaut, l'utilisateur courant
+    const orga = ev.creePar || me().uid;
+
+    if (NOTIFIER_ORGANISATEUR && orga) liste.push(orga);
+
+    return [...new Set(liste)].filter(uid =>
+      uid && (NOTIFIER_ORGANISATEUR || uid !== me().uid)
+    );
+  };
 
 
   const detailReunion = (ev, uid) => {
@@ -1454,29 +1480,7 @@ const destDe = ev => {
       id: evId
     };
 
-    let destinataires = [];
-
-    if (reunionEnregistree.tous === true) {
-      destinataires = users()
-        .map(u => u.uid)
-        .filter(Boolean);
-    } else {
-      destinataires = [
-        ...(reunionEnregistree.participants || []),
-        ...(reunionEnregistree.participantsMandatory || []),
-        ...(reunionEnregistree.participantsOptional || [])
-      ];
-    }
-
-    // Élimination des doublons et de l'organisateur.
-  destinataires = [
-  ...new Set(destinataires)
-].filter(Boolean);
-
-// On ajoute systématiquement l'organisateur.
-if (me().uid && !destinataires.includes(me().uid)) {
-  destinataires.push(me().uid);
-}
+    const destinataires = destDe(reunionEnregistree);
 
     console.log('📅 Réunion enregistrée :', titre);
     console.log('👤 Organisateur :', me().uid);
