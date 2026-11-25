@@ -248,8 +248,26 @@ $('#cal').onclick=e=>{
   const srv=e.target.closest('.ev-srv');
   if(srv){ouvrirEvenement(srv.dataset.evid);return}
   const ev=e.target.closest('.ev');
-  if(ev)sel=ev.dataset.id;
+  if(ev){sel=ev.dataset.id;ouvrirRdv(sel)}
 };
+
+function ouvrirRdv(id){
+  const r=rdvs.find(x=>x.id===id),box=$('#detail');
+  if(!r){box.hidden=true;return}
+  const p=r.patient||{};
+  const F=(l,v)=>v?`<div class="fact"><label>${l}</label><span>${esc(v)}</span></div>`:'';
+  const hh=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  const fin=hh(tm(r.heure)+(r.duree||DUR));
+  const dateTxt=new Date(r.date+'T00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const nom=((p.prenom||'')+' '+(p.nom||'')).trim()||'Patient';
+  box.innerHTML=`<div class="dh"><h2 class="card-title">${esc(nom)}</h2><button class="x" id="closeRdv" aria-label="Fermer">×</button></div>`
+    +`<span class="pill s-${esc(r.statut)}">${esc(STAT[r.statut]||r.statut||'')}</span>`
+    +F('Date',dateTxt)+F('Horaire',`${r.heure} – ${fin}`)
+    +F('Motif',r.motif||r.raison)+F('Téléphone',p.tel||p.telephone)
+    +F('Date de naissance',p.dateNaissance||p.naissance)+F('Notes',r.notes||r.note||r.commentaire);
+  box.hidden=false;
+  $('#closeRdv').onclick=()=>{box.hidden=true};
+}
 
 
 function ouvrirEvenement(id){
