@@ -404,7 +404,7 @@ onAuthStateChanged(auth,async u=>{
  try{users=(await getDocs(collection(db,"medecins"))).docs.map(d=>({uid:d.id,...d.data()}))}catch(e){}
  onSnapshot(query(collection(db,"comptes-generiques"),where("membres","array-contains",u.uid)),s=>{genAttr=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false);rail()});
  onSnapshot(collection(db,"comptes-generiques"),s=>{genAll=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false).sort((a,b)=>(a.nom||"").localeCompare(b.nom||"","fr"))});
- onSnapshot(query(collection(db,"comptes-administrateurs"),where("membres","array-contains",u.uid)),s=>{admAttr=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false);rail();suivre()},()=>{});
+ onSnapshot(query(collection(db,"comptes-administrateurs"),where("membres","array-contains",u.uid)),s=>{admAttr=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false&&c.automatique!==true);rail();suivre()},()=>{});
  onSnapshot(query(collection(db,"messageries"),where("participants","array-contains",u.uid)),s=>{
   convs=s.docs.map(d=>({id:d.id,data:d.data()})).sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
   if(convCible){const x=convs.find(c=>c.id===convCible);convCible=null;if(x&&visible(x.data))ouvrir(x.id,x.data)}

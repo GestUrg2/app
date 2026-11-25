@@ -5,7 +5,7 @@
    - Assistant "meilleur créneau", frise de disponibilités, conflits de salle
    - Répétition (hebdo / plusieurs jours), rappel, lien visio, RSVP, export .ics
    ===================================================================== */
-import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp }
+import { doc, addDoc, setDoc, updateDoc, deleteDoc, collection, serverTimestamp, increment }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -41,22 +41,28 @@ export const resumeRSVP = ev => {
 };
 
 /* ---------- Notifications via la messagerie interne ----------
-   Les messages partent du compte système « Notification calendrier » (même canal
-   postMessage → shell que demanderNotification() dans fiche.html).
-   Ce compte est réservé aux notifications automatiques : `systeme: true`,
-   le shell/messagerie doit refuser tout envoi manuel depuis ce compte. */
-export const COMPTE_NOTIF_CALENDRIER = { uid: 'notification-calendrier', nom: 'Notification calendrier', systeme: true };
-function envoyerNotif(o, uid, titre, contenu, ref) {
-  const msg = {
-    type: 'NOTIFICATION', userId: uid, titre, contenu,
-    expediteur: COMPTE_NOTIF_CALENDRIER.uid, expediteurNom: COMPTE_NOTIF_CALENDRIER.nom,
-    automatique: true, source: 'calendrier', ref: ref || null
-  };
+   Message déposé dans messageries/notif-cal-<uid> (même format que les comptes
+   d'envoi de messagerie.html : type « compte-administratif », lecture seule pour
+   le destinataire) + notification push via le shell (comme fiche.html).
+   Le compte « Notification calendrier » n'a aucun membre : personne ne peut
+   écrire depuis lui, il ne sert qu'aux envois automatiques ci-dessous. */
+export const COMPTE_NOTIF_CALENDRIER = { id: 'notification-calendrier', nom: 'Notification calendrier', icon: '📅' };
+async function envoyerNotif(o, uid, titre, contenu, ref, nomDest) {
+  const C = COMPTE_NOTIF_CALENDRIER;
   try {
-    if (typeof o.envoyerNotif === 'function') o.envoyerNotif(msg);           // surcharge possible par la page hôte
-    else if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
-    else console.warn('Notification calendrier sans parent, message perdu :', titre);
-  } catch (e) { console.warn('Notification calendrier :', e) }
+    const cref = doc(o.db, 'messageries', 'notif-cal-' + uid), maj = { lastMessage: titre, updatedAt: serverTimestamp() };
+    try { await updateDoc(cref, { ...maj, ['nonLus.' + uid]: increment(1) }) }
+    catch (e) {
+      if (e?.code !== 'not-found') throw e;
+      await setDoc(cref, { type: 'compte-administratif', participants: [uid], destinataireUid: uid, compteId: C.id, compteNom: C.nom,
+        titre: C.nom + ' · ' + (nomDest || uid), icon: C.icon, createdAt: serverTimestamp(), ...maj, nonLus: { [uid]: 1 } });
+    }
+    await addDoc(collection(cref, 'messages'), { auteur: C.id, auteurNom: C.nom, type: 'message', texte: titre + '\n\n' + contenu,
+      evenementId: ref?.id || null, date: serverTimestamp(), luPar: [] });
+  } catch (e) { console.warn('Notification calendrier (messagerie) :', e) }
+  try {
+    if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'NOTIFICATION', userId: uid, titre, contenu }, '*');
+  } catch (e) { console.warn('Notification calendrier (push) :', e) }
 }
 
 /* ---------- Export .ics ---------- */
@@ -188,6 +194,7 @@ export function initReunions(o) {
   const st = { id: null, mand: new Set(), opt: new Set(), dur: 60 };
 
   /* ----- notifications messagerie (création / modification / suppression) ----- */
+  const envoyer = (u, t, c, r) => envoyerNotif(o, u, t, c, r, nomDe(u));
   const lieuTxt = ev => ev.mode === 'distanciel' ? 'En visio' : ((ev.lieu || 'Non précisé') + (ev.mode === 'hybride' ? ' + visio' : ''));
   const destDe = ev => [...new Set(ev.tous ? users().map(u => u.uid) : (ev.participants || []))].filter(u => u && u !== me().uid);
   const detailReunion = (ev, uid) => {
@@ -214,18 +221,18 @@ export function initReunions(o) {
   function notifierReunion(avantEv, apresEv) {
     const par = me().nom || '—', ref = { type: 'evenement', id: (apresEv || avantEv)?.id || null };
     if (!apresEv) {                                   // suppression
-      destDe(avantEv).forEach(u => envoyerNotif(o, u, '🗑️ Réunion annulée : ' + avantEv.titre,
+      destDe(avantEv).forEach(u => envoyer(u, '🗑️ Réunion annulée : ' + avantEv.titre,
         `Quand : ${quand(avantEv)}\nHoraire : ${avantEv.start}–${avantEv.end}\nAnnulée par : ${par}`, ref));
       return;
     }
     const apres = new Set(destDe(apresEv)), avant = new Set(avantEv ? destDe(avantEv) : []);
     const chg = avantEv ? changements(avantEv, apresEv) : [];
     apres.forEach(u => {
-      if (!avantEv || !avant.has(u)) envoyerNotif(o, u, '📅 Nouvelle réunion : ' + apresEv.titre, detailReunion(apresEv, u), ref);
-      else if (chg.length) envoyerNotif(o, u, '✏️ Réunion modifiée : ' + apresEv.titre,
+      if (!avantEv || !avant.has(u)) envoyer(u, '📅 Nouvelle réunion : ' + apresEv.titre, detailReunion(apresEv, u), ref);
+      else if (chg.length) envoyer(u, '✏️ Réunion modifiée : ' + apresEv.titre,
         'Modifications :\n• ' + chg.join('\n• ') + '\n\n' + detailReunion(apresEv, u) + '\nModifiée par : ' + par, ref);
     });
-    avant.forEach(u => { if (!apres.has(u)) envoyerNotif(o, u, '🚫 Retrait de la réunion : ' + avantEv.titre,
+    avant.forEach(u => { if (!apres.has(u)) envoyer(u, '🚫 Retrait de la réunion : ' + avantEv.titre,
       `Vous n’êtes plus invité(e).\nQuand : ${quand(avantEv)}\nHoraire : ${avantEv.start}–${avantEv.end}\nPar : ${par}`, ref) });
   }
 
