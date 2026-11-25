@@ -1469,11 +1469,14 @@ const destDe = ev => {
     }
 
     // Élimination des doublons et de l'organisateur.
-    destinataires = [
-      ...new Set(destinataires)
-    ].filter(uid =>
-      uid && uid !== me().uid
-    );
+  destinataires = [
+  ...new Set(destinataires)
+].filter(Boolean);
+
+// On ajoute systématiquement l'organisateur.
+if (me().uid && !destinataires.includes(me().uid)) {
+  destinataires.push(me().uid);
+}
 
     console.log('📅 Réunion enregistrée :', titre);
     console.log('👤 Organisateur :', me().uid);
