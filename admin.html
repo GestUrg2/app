@@ -144,6 +144,11 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 }
 .modal h3 .i{color:var(--primary)}
 .modal .field{margin-bottom:14px}
+.sig-box{display:flex;align-items:center;justify-content:center;min-height:90px;padding:10px;background:#fff;border:1px dashed var(--line);border-radius:12px}
+.sig-box img{max-width:100%;max-height:80px;display:block}
+.sig-box span{font-size:14px;color:var(--muted)}
+.sig-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sig-note{margin:6px 0 0;font-size:13px;color:var(--muted)}
 .modal-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 .modal-x{
   appearance:none;position:absolute;top:14px;right:14px;width:40px;height:40px;display:grid;place-items:center;padding:0;
@@ -606,6 +611,16 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
         <option value="Ext">Externe</option>
       </select>
     </div>
+    <div class="field">
+      <label>Signature (affichée sur les documents)</label>
+      <div class="sig-box"><img id="editSigPreview" alt="Signature" hidden><span id="editSigVide">Aucune signature</span></div>
+      <div class="sig-actions">
+        <input type="file" id="editSigFile" accept="image/png,image/jpeg,image/webp" hidden>
+        <button type="button" id="editSigChoisir" class="btn-id btn-sm">Choisir une image</button>
+        <button type="button" id="editSigSupprimer" class="btn-id btn-sm" hidden>Supprimer</button>
+      </div>
+      <p class="sig-note">Image PNG ou JPG, de préférence sur fond blanc ou transparent.</p>
+    </div>
     <div class="modal-actions">
       <button onclick="fermerModale()" class="btn-id"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg> Fermer</button>
       <button id="saveEditBtn" class="btn-id btn-id-v"><svg class="i sm" aria-hidden="true"><use href="#i-save"/></svg> Enregistrer</button>
@@ -686,7 +701,8 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
       addDoc,
       serverTimestamp,
       arrayUnion,
-      arrayRemove
+      arrayRemove,
+      deleteField
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -1147,7 +1163,85 @@ window.ouvrirModale = (id, nom, email, specialite, lieu, type) => {
   document.getElementById("editSpecialite").value = specialite;
   document.getElementById("editLieu").value = lieu;
   document.getElementById("editType").value = type;
+  chargerSignatureModale(id);
 };
+
+// ==============================
+// ✍️ SIGNATURE (stockée dans medecins/{uid}.signature, en data URL)
+// ==============================
+// editSignature : undefined = inchangée | "" = à supprimer | "data:image/..." = nouvelle
+let editSignature;
+
+function afficherSignatureModale(src) {
+  const img = document.getElementById("editSigPreview");
+  const vide = document.getElementById("editSigVide");
+  img.hidden = !src;
+  vide.hidden = !!src;
+  if (src) img.src = src; else img.removeAttribute("src");
+  document.getElementById("editSigSupprimer").hidden = !src;
+}
+
+async function chargerSignatureModale(uid) {
+  editSignature = undefined;
+  document.getElementById("editSigFile").value = "";
+  afficherSignatureModale(null);
+  try {
+    const snap = await getDoc(doc(db, "medecins", uid));
+    // on ignore la réponse si une autre fiche a été ouverte entre-temps
+    if (document.getElementById("editUserId").value !== uid) return;
+    if (editSignature !== undefined) return;
+    afficherSignatureModale(snap.exists() ? (snap.data().signature || null) : null);
+  } catch (e) {
+    console.warn("Signature illisible :", e);
+  }
+}
+
+// Redimensionne (max 600 x 240 px) pour rester très en dessous de la limite Firestore (1 Mo)
+function preparerSignature(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const k = Math.min(600 / img.naturalWidth, 240 / img.naturalHeight, 1);
+      const w = Math.max(1, Math.round(img.naturalWidth * k));
+      const h = Math.max(1, Math.round(img.naturalHeight * k));
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      let out = c.toDataURL("image/png");
+      if (out.length > 400000) {               // PNG trop lourd (scan) -> JPEG sur fond blanc
+        const c2 = document.createElement("canvas");
+        c2.width = w; c2.height = h;
+        const x = c2.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
+        out = c2.toDataURL("image/jpeg", 0.88);
+      }
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image illisible")); };
+    img.src = url;
+  });
+}
+
+document.getElementById("editSigChoisir").addEventListener("click", () => document.getElementById("editSigFile").click());
+
+document.getElementById("editSigFile").addEventListener("change", async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  try {
+    editSignature = await preparerSignature(f);
+    afficherSignatureModale(editSignature);
+  } catch (err) {
+    afficherBulle("❌ Image de signature illisible", "error");
+  }
+});
+
+document.getElementById("editSigSupprimer").addEventListener("click", () => {
+  editSignature = "";
+  document.getElementById("editSigFile").value = "";
+  afficherSignatureModale(null);
+});
 
 window.fermerModale = () => {
   document.getElementById("editModal").style.display = "none";
@@ -1303,7 +1397,11 @@ document.getElementById("saveEditBtn").addEventListener("click", async () => {
 
   try {
     const ref = doc(db, "medecins", id);
-    await updateDoc(ref, { nom, email, specialite, lieu, type });
+    const maj = { nom, email, specialite, lieu, type };
+    if (editSignature === "") maj.signature = deleteField();
+    else if (editSignature) maj.signature = editSignature;
+    await updateDoc(ref, maj);
+    if (editSignature !== undefined && window.ordSignatureReset) window.ordSignatureReset();
     afficherBulle("✅ Informations mises à jour", "success");
     fermerModale();
     chargerUtilisateurs(); // rafraîchir la liste

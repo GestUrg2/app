@@ -51,6 +51,122 @@ const texteDe = h => String(h).replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").t
 
 
 // ==============================
+// SIGNATURE DE L'UTILISATEUR CONNECTÉ
+// ==============================
+//
+// La signature est enregistrée dans Firestore : medecins/{uid}.signature
+// (data URL, modifiable depuis la page Admin).
+// - ordToPDF() la charge automatiquement si ord.medecin.signature est vide ;
+// - generateHTML() (synchrone) utilise la signature déjà en cache ;
+// - window.chargerSignatureConnecte() permet aux autres générateurs de
+//   documents (certificats, courriers...) d'en profiter.
+//
+// Si ord.medecin.uid existe et n'est pas celui de l'utilisateur connecté, la
+// signature n'est PAS ajoutée (on ne signe pas à la place de quelqu'un d'autre).
+
+const FIREBASE_CDN = "https://www.gstatic.com/firebasejs/10.12.2/";
+const SIG_MAX_W = 150;   // px, identique au CSS .signature-img
+const SIG_MAX_H = 60;
+
+let _sigCache = null;    // { uid, src, w, h }  (src = null si pas de signature)
+let _sigPromise = null;
+
+function chargerImage(src) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
+}
+
+async function lireSignatureConnecte() {
+
+    try {
+
+        const [appM, authM, fsM] = await Promise.all([
+            import(FIREBASE_CDN + "firebase-app.js"),
+            import(FIREBASE_CDN + "firebase-auth.js"),
+            import(FIREBASE_CDN + "firebase-firestore.js")
+        ]);
+
+        const app = appM.getApps()[0];
+        if (!app) return null;
+
+        const auth = authM.getAuth(app);
+        if (typeof auth.authStateReady === "function") await auth.authStateReady();
+
+        const user = auth.currentUser;
+        if (!user) return null;
+
+        if (_sigCache && _sigCache.uid === user.uid) return _sigCache;
+
+        const snap = await fsM.getDoc(fsM.doc(fsM.getFirestore(app), "medecins", user.uid));
+        const src = snap.exists() ? (snap.data().signature || null) : null;
+
+        let w = null, h = null;
+
+        if (src) {
+            // dimensions connues d'avance : la mesure de pagination ne dépend plus du chargement de l'image
+            const img = await chargerImage(src);
+            if (!img || !img.naturalWidth) {
+                _sigCache = { uid: user.uid, src: null, w: null, h: null };
+                return _sigCache;
+            }
+            const k = Math.min(SIG_MAX_W / img.naturalWidth, SIG_MAX_H / img.naturalHeight, 1);
+            w = Math.round(img.naturalWidth * k);
+            h = Math.round(img.naturalHeight * k);
+        }
+
+        _sigCache = { uid: user.uid, src: src, w: w, h: h };
+        return _sigCache;
+
+    } catch (e) {
+
+        console.warn("Signature indisponible :", e);
+        return null;
+
+    }
+
+}
+
+function chargerSignatureConnecte() {
+    if (!_sigPromise) {
+        _sigPromise = lireSignatureConnecte().then(r => { if (!r) _sigPromise = null; return r; });
+    }
+    return _sigPromise;
+}
+
+// à appeler si la signature de l'utilisateur vient d'être modifiée
+function ordSignatureReset() {
+    _sigCache = null;
+    _sigPromise = null;
+}
+
+// Copie de ord avec la signature de l'utilisateur connecté (si disponible)
+function ordAvecSignature(ord) {
+
+    const medecin = ord.medecin || {};
+
+    if (medecin.signature) return ord;                                        // déjà fournie
+    if (!_sigCache || !_sigCache.src) return ord;                             // pas de signature
+    if (medecin.uid && medecin.uid !== _sigCache.uid) return ord;             // autre médecin
+
+    return Object.assign({}, ord, {
+        medecin: Object.assign({}, medecin, {
+            signature: _sigCache.src,
+            signatureW: _sigCache.w,
+            signatureH: _sigCache.h
+        })
+    });
+
+}
+
+// Si elle est déjà en cache, la signature est dispo dès l'ouverture de la page
+chargerSignatureConnecte();
+
+
+// ==============================
 // CONTENU -> LIGNES
 // ==============================
 
@@ -306,6 +422,9 @@ function fluxHTML(ord, lignes) {
     const patient = ord.patient || {};
     const medecin = ord.medecin || {};
 
+    const sigDim = (medecin.signatureW && medecin.signatureH)
+        ? ` style="width:${medecin.signatureW}px;height:${medecin.signatureH}px"` : "";
+
     return `<div class="header">
                 <img src="${ord.logo || 'logo.png'}" class="logo">
                 <div>Le ${ord.date}, ${ord.lieu}</div>
@@ -319,7 +438,7 @@ function fluxHTML(ord, lignes) {
             <div class="signature"${medecin.signature ? ' style="min-height:110px"' : ""}>
                 ${medecin.nom}<br>
                 ${medecin.specialite || ""}
-                ${medecin.signature ? `<br><img src="${medecin.signature}" class="signature-img">` : ""}
+                ${medecin.signature ? `<br><img src="${medecin.signature}" class="signature-img"${sigDim}>` : ""}
             </div>`;
 
 }
@@ -525,6 +644,8 @@ function htmlSimple(ord, lignes, css) {
 
 function generateHTML(ord) {
 
+    ord = ordAvecSignature(ord);
+
     const lignes = parseLignes(ord.contenu);
     const css = cssOrd();
 
@@ -591,6 +712,11 @@ async function ordToPDF(ord) {
 
     cleanContainer();
 
+    // signature de l'utilisateur connecté (si le document n'en fournit pas déjà une)
+    if (!(ord.medecin && ord.medecin.signature)) {
+        await chargerSignatureConnecte();
+    }
+
     const html = generateHTML(ord);
 
     const container = document.createElement("div");
@@ -654,4 +780,7 @@ window.ordToPDF = ordToPDF;
 window.generateHTML = generateHTML;
 window.ordPdfOptions = ordPdfOptions;
 window.renderContenu = renderContenu;
+window.chargerSignatureConnecte = chargerSignatureConnecte;
+window.ordAvecSignature = ordAvecSignature;
+window.ordSignatureReset = ordSignatureReset;
 })();
