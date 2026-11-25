@@ -132,7 +132,7 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
   background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
   animation:fade .15s ease-out;
 }
-#badgeModal{z-index:10000} #lireBadgeModal{z-index:10001} #editModal{z-index:10002}
+#badgeModal{z-index:10000} #lireBadgeModal{z-index:10001} #editModal{z-index:10002} #sigModal{z-index:10003}
 .modal{
   position:relative;width:min(480px,100%);max-height:100%;overflow-y:auto;
   padding:22px 24px 24px;background:#fff;border-radius:18px;
@@ -149,6 +149,21 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 .sig-box span{font-size:14px;color:var(--muted)}
 .sig-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .sig-note{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.sig-modal{width:min(560px,100%)}
+.sig-tabs{display:flex;gap:6px;margin-bottom:14px;padding:4px;background:var(--field);border:1px solid var(--line);border-radius:12px}
+.sig-tab{flex:1;min-height:40px;font:600 14px/1 var(--font);color:var(--muted);background:transparent;border:0;border-radius:9px;cursor:pointer;touch-action:manipulation}
+.sig-tab.on{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm)}
+#sigPad{display:block;width:100%;aspect-ratio:5/2;touch-action:none;cursor:crosshair;background:#fff linear-gradient(transparent calc(75% - 1px),var(--line) calc(75% - 1px),var(--line) 75%,transparent 75%);border:1px dashed var(--primary);border-radius:12px}
+#sigCropStage{position:relative;margin:12px auto;overflow:hidden;border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;background:#eee}
+#sigCropStage canvas{display:block}
+#sigCropRect{position:absolute;border:2px solid var(--primary);box-shadow:0 0 0 9999px rgba(10,25,41,.5);cursor:move;touch-action:none}
+#sigCropRect i{position:absolute;width:22px;height:22px;background:#fff;border:2px solid var(--primary);border-radius:50%;touch-action:none}
+#sigCropRect i.nw{left:-12px;top:-12px;cursor:nwse-resize}
+#sigCropRect i.ne{right:-12px;top:-12px;cursor:nesw-resize}
+#sigCropRect i.sw{left:-12px;bottom:-12px;cursor:nesw-resize}
+#sigCropRect i.se{right:-12px;bottom:-12px;cursor:nwse-resize}
+.sig-ck{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;font-weight:500}
+.sig-ck input{width:18px;height:18px;margin:0}
 .modal-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 .modal-x{
   appearance:none;position:absolute;top:14px;right:14px;width:40px;height:40px;display:grid;place-items:center;padding:0;
@@ -615,15 +630,50 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
       <label>Signature (affichée sur les documents)</label>
       <div class="sig-box"><img id="editSigPreview" alt="Signature" hidden><span id="editSigVide">Aucune signature</span></div>
       <div class="sig-actions">
-        <input type="file" id="editSigFile" accept="image/png,image/jpeg,image/webp" hidden>
-        <button type="button" id="editSigChoisir" class="btn-id btn-sm">Choisir une image</button>
+        <button type="button" id="editSigDefinir" class="btn-id btn-sm">Ajouter / modifier la signature</button>
         <button type="button" id="editSigSupprimer" class="btn-id btn-sm" hidden>Supprimer</button>
       </div>
-      <p class="sig-note">Image PNG ou JPG, de préférence sur fond blanc ou transparent.</p>
+      <p class="sig-note">Importez une image (avec recadrage) ou signez directement dans un cadre.</p>
     </div>
     <div class="modal-actions">
       <button onclick="fermerModale()" class="btn-id"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg> Fermer</button>
       <button id="saveEditBtn" class="btn-id btn-id-v"><svg class="i sm" aria-hidden="true"><use href="#i-save"/></svg> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE SIGNATURE -->
+<div id="sigModal" class="modal-overlay">
+  <div class="modal sig-modal">
+    <button class="modal-x" id="sigFermerX" type="button" aria-label="Fermer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg> Signature</h3>
+    <div class="sig-tabs" role="tablist">
+      <button type="button" class="sig-tab on" data-o="import" role="tab">Importer une image</button>
+      <button type="button" class="sig-tab" data-o="draw" role="tab">Signer dans un cadre</button>
+    </div>
+
+    <div id="sigPaneImport">
+      <input type="file" id="sigFile" accept="image/png,image/jpeg,image/webp" hidden>
+      <button type="button" id="sigChoisirFichier" class="btn-id btn-sm">Choisir une image</button>
+      <div id="sigCropWrap" hidden>
+        <div id="sigCropStage">
+          <canvas id="sigCropCanvas"></canvas>
+          <div id="sigCropRect"><i class="nw" data-h="nw"></i><i class="ne" data-h="ne"></i><i class="sw" data-h="sw"></i><i class="se" data-h="se"></i></div>
+        </div>
+        <p class="sig-note">Déplacez le cadre ou tirez sur ses coins pour recadrer la signature.</p>
+        <label class="sig-ck"><input type="checkbox" id="sigTransp" checked> Rendre le fond blanc transparent</label>
+      </div>
+    </div>
+
+    <div id="sigPaneDraw" hidden>
+      <p class="sig-note" style="margin:0 0 8px">Signez dans le cadre avec la souris, le doigt ou un stylet.</p>
+      <canvas id="sigPad" width="1200" height="480"></canvas>
+      <div class="sig-actions"><button type="button" id="sigEffacer" class="btn-id btn-sm">Effacer</button></div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" id="sigAnnuler" class="btn-id">Annuler</button>
+      <button type="button" id="sigValider" class="btn-id btn-id-v">Utiliser cette signature</button>
     </div>
   </div>
 </div>
@@ -1183,7 +1233,6 @@ function afficherSignatureModale(src) {
 
 async function chargerSignatureModale(uid) {
   editSignature = undefined;
-  document.getElementById("editSigFile").value = "";
   afficherSignatureModale(null);
   try {
     const snap = await getDoc(doc(db, "medecins", uid));
@@ -1196,50 +1245,216 @@ async function chargerSignatureModale(uid) {
   }
 }
 
-// Redimensionne (max 600 x 240 px) pour rester très en dessous de la limite Firestore (1 Mo)
-function preparerSignature(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const k = Math.min(600 / img.naturalWidth, 240 / img.naturalHeight, 1);
-      const w = Math.max(1, Math.round(img.naturalWidth * k));
-      const h = Math.max(1, Math.round(img.naturalHeight * k));
-      const c = document.createElement("canvas");
-      c.width = w; c.height = h;
-      c.getContext("2d").drawImage(img, 0, 0, w, h);
-      let out = c.toDataURL("image/png");
-      if (out.length > 400000) {               // PNG trop lourd (scan) -> JPEG sur fond blanc
-        const c2 = document.createElement("canvas");
-        c2.width = w; c2.height = h;
-        const x = c2.getContext("2d");
-        x.fillStyle = "#fff"; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
-        out = c2.toDataURL("image/jpeg", 0.88);
-      }
-      resolve(out);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image illisible")); };
-    img.src = url;
-  });
+// ---------- Fenêtre de saisie : importer + recadrer, ou signer dans un cadre ----------
+const SIG_OUT_W = 600, SIG_OUT_H = 240;
+const $sig = id => document.getElementById(id);
+const bornes = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// Exporte une zone d'une image/canvas en data URL (réduite à 600 x 240 px maximum)
+function exporterSignature(source, sx, sy, sw, sh, transparent) {
+  const k = Math.min(SIG_OUT_W / sw, SIG_OUT_H / sh, 1);
+  const w = Math.max(1, Math.round(sw * k)), h = Math.max(1, Math.round(sh * k));
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const x = c.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
+  if (transparent) {                                   // fond clair -> transparent
+    const d = x.getImageData(0, 0, w, h), p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      const lum = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+      const a = lum >= 235 ? 0 : lum <= 185 ? 255 : Math.round(255 * (235 - lum) / 50);
+      if (a < p[i + 3]) p[i + 3] = a;
+    }
+    x.putImageData(d, 0, 0);
+  }
+  let out = c.toDataURL("image/png");
+  if (out.length > 400000) {                           // trop lourd (scan) -> JPEG sur fond blanc
+    const c2 = document.createElement("canvas");
+    c2.width = w; c2.height = h;
+    const x2 = c2.getContext("2d");
+    x2.fillStyle = "#fff"; x2.fillRect(0, 0, w, h); x2.drawImage(c, 0, 0);
+    out = c2.toDataURL("image/jpeg", 0.88);
+  }
+  return out;
 }
 
-document.getElementById("editSigChoisir").addEventListener("click", () => document.getElementById("editSigFile").click());
+// ----- onglets -----
+let sigOnglet = "import";
+function sigChoisirOnglet(o) {
+  sigOnglet = o;
+  document.querySelectorAll(".sig-tab").forEach(b => b.classList.toggle("on", b.dataset.o === o));
+  $sig("sigPaneImport").hidden = o !== "import";
+  $sig("sigPaneDraw").hidden = o !== "draw";
+}
+document.querySelectorAll(".sig-tab").forEach(b => b.addEventListener("click", () => sigChoisirOnglet(b.dataset.o)));
 
-document.getElementById("editSigFile").addEventListener("change", async (e) => {
+// ----- dessin dans le cadre -----
+const pad = $sig("sigPad");
+const padCtx = pad.getContext("2d");
+let padInk = false, padDrawing = false, padLast = null, padMid = null;
+
+const padPos = e => {
+  const r = pad.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * pad.width / r.width, y: (e.clientY - r.top) * pad.height / r.height };
+};
+function padEffacer() { padCtx.clearRect(0, 0, pad.width, pad.height); padInk = false; padDrawing = false; }
+
+pad.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  pad.setPointerCapture(e.pointerId);
+  padDrawing = true;
+  padCtx.lineWidth = 5; padCtx.lineCap = "round"; padCtx.lineJoin = "round";
+  padCtx.strokeStyle = padCtx.fillStyle = "#0a1a33";
+  const p = padPos(e);
+  padLast = padMid = p;
+  padCtx.beginPath(); padCtx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); padCtx.fill();   // simple point
+  padInk = true;
+});
+pad.addEventListener("pointermove", e => {
+  if (!padDrawing) return;
+  e.preventDefault();
+  const p = padPos(e);
+  const mid = { x: (padLast.x + p.x) / 2, y: (padLast.y + p.y) / 2 };
+  padCtx.beginPath(); padCtx.moveTo(padMid.x, padMid.y);
+  padCtx.quadraticCurveTo(padLast.x, padLast.y, mid.x, mid.y);
+  padCtx.stroke();
+  padLast = p; padMid = mid;
+});
+const padFin = () => {
+  if (!padDrawing) return;
+  padDrawing = false;
+  padCtx.beginPath(); padCtx.moveTo(padMid.x, padMid.y); padCtx.lineTo(padLast.x, padLast.y); padCtx.stroke();
+};
+pad.addEventListener("pointerup", padFin);
+pad.addEventListener("pointercancel", padFin);
+$sig("sigEffacer").addEventListener("click", padEffacer);
+
+// rogne le dessin autour du tracé
+function exporterDessin() {
+  const W = pad.width, H = pad.height;
+  const d = padCtx.getImageData(0, 0, W, H).data;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (d[(y * W + x) * 4 + 3] > 10) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) throw new Error("vide");
+  const m = 12;
+  x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m);
+  x1 = Math.min(W - 1, x1 + m); y1 = Math.min(H - 1, y1 + m);
+  return exporterSignature(pad, x0, y0, x1 - x0 + 1, y1 - y0 + 1, false);
+}
+
+// ----- import + recadrage -----
+const crop = { img: null, url: null, scale: 1, dw: 0, dh: 0, r: { x: 0, y: 0, w: 0, h: 0 }, drag: null };
+const cropRectEl = $sig("sigCropRect");
+
+function cropMaj() {
+  const r = crop.r;
+  cropRectEl.style.left = r.x + "px"; cropRectEl.style.top = r.y + "px";
+  cropRectEl.style.width = r.w + "px"; cropRectEl.style.height = r.h + "px";
+}
+
+function cropReset() {
+  if (crop.url) URL.revokeObjectURL(crop.url);
+  crop.img = null; crop.url = null; crop.drag = null;
+  $sig("sigCropWrap").hidden = true;
+  $sig("sigFile").value = "";
+}
+
+$sig("sigChoisirFichier").addEventListener("click", () => $sig("sigFile").click());
+$sig("sigFile").addEventListener("change", e => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
+  if (crop.url) URL.revokeObjectURL(crop.url);
+  crop.url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    crop.img = img;
+    const wrap = $sig("sigCropWrap");
+    wrap.hidden = false;
+    const maxW = Math.min(wrap.clientWidth || 420, 520), maxH = 300;
+    crop.scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+    crop.dw = Math.max(1, Math.round(img.naturalWidth * crop.scale));
+    crop.dh = Math.max(1, Math.round(img.naturalHeight * crop.scale));
+    const cv = $sig("sigCropCanvas");
+    cv.width = crop.dw; cv.height = crop.dh;
+    cv.getContext("2d").drawImage(img, 0, 0, crop.dw, crop.dh);
+    const st = $sig("sigCropStage");
+    st.style.width = crop.dw + "px"; st.style.height = crop.dh + "px";
+    const mx = crop.dw * 0.05, my = crop.dh * 0.05;
+    crop.r = { x: mx, y: my, w: crop.dw - 2 * mx, h: crop.dh - 2 * my };
+    cropMaj();
+  };
+  img.onerror = () => { cropReset(); afficherBulle("❌ Image illisible", "error"); };
+  img.src = crop.url;
+});
+
+cropRectEl.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  cropRectEl.setPointerCapture(e.pointerId);
+  crop.drag = { h: (e.target.dataset && e.target.dataset.h) || "move", x: e.clientX, y: e.clientY, r: { ...crop.r } };
+});
+cropRectEl.addEventListener("pointermove", e => {
+  const d = crop.drag;
+  if (!d) return;
+  const dx = e.clientX - d.x, dy = e.clientY - d.y, MIN = 24;
+  let { x, y, w, h } = d.r;
+  if (d.h === "move") {
+    x = bornes(x + dx, 0, crop.dw - w);
+    y = bornes(y + dy, 0, crop.dh - h);
+  } else {
+    if (d.h.includes("w")) { const nx = bornes(x + dx, 0, x + w - MIN); w += x - nx; x = nx; }
+    if (d.h.includes("e")) { w = bornes(w + dx, MIN, crop.dw - x); }
+    if (d.h.includes("n")) { const ny = bornes(y + dy, 0, y + h - MIN); h += y - ny; y = ny; }
+    if (d.h.includes("s")) { h = bornes(h + dy, MIN, crop.dh - y); }
+  }
+  crop.r = { x, y, w, h };
+  cropMaj();
+});
+const cropFin = () => { crop.drag = null; };
+cropRectEl.addEventListener("pointerup", cropFin);
+cropRectEl.addEventListener("pointercancel", cropFin);
+
+// ----- ouverture / fermeture / validation -----
+function ouvrirSigModal() {
+  padEffacer();
+  cropReset();
+  sigChoisirOnglet("import");
+  $sig("sigModal").style.display = "flex";
+}
+function fermerSigModal() {
+  $sig("sigModal").style.display = "none";
+  cropReset();
+}
+$sig("editSigDefinir").addEventListener("click", ouvrirSigModal);
+$sig("sigAnnuler").addEventListener("click", fermerSigModal);
+$sig("sigFermerX").addEventListener("click", fermerSigModal);
+
+$sig("sigValider").addEventListener("click", () => {
   try {
-    editSignature = await preparerSignature(f);
-    afficherSignatureModale(editSignature);
+    let out;
+    if (sigOnglet === "draw") {
+      if (!padInk) { afficherBulle("✍️ Signez d'abord dans le cadre", "error"); return; }
+      out = exporterDessin();
+    } else {
+      if (!crop.img) { afficherBulle("Choisissez d'abord une image", "error"); return; }
+      const k = 1 / crop.scale, r = crop.r;
+      out = exporterSignature(crop.img, r.x * k, r.y * k, r.w * k, r.h * k, $sig("sigTransp").checked);
+    }
+    editSignature = out;
+    afficherSignatureModale(out);
+    fermerSigModal();
   } catch (err) {
-    afficherBulle("❌ Image de signature illisible", "error");
+    console.warn(err);
+    afficherBulle("❌ Impossible de créer la signature", "error");
   }
 });
 
-document.getElementById("editSigSupprimer").addEventListener("click", () => {
+$sig("editSigSupprimer").addEventListener("click", () => {
   editSignature = "";
-  document.getElementById("editSigFile").value = "";
   afficherSignatureModale(null);
 });
 
