@@ -40,6 +40,25 @@ export const resumeRSVP = ev => {
   return c;
 };
 
+/* ---------- Notifications via la messagerie interne ----------
+   Les messages partent du compte système « Notification calendrier » (même canal
+   postMessage → shell que demanderNotification() dans fiche.html).
+   Ce compte est réservé aux notifications automatiques : `systeme: true`,
+   le shell/messagerie doit refuser tout envoi manuel depuis ce compte. */
+export const COMPTE_NOTIF_CALENDRIER = { uid: 'notification-calendrier', nom: 'Notification calendrier', systeme: true };
+function envoyerNotif(o, uid, titre, contenu, ref) {
+  const msg = {
+    type: 'NOTIFICATION', userId: uid, titre, contenu,
+    expediteur: COMPTE_NOTIF_CALENDRIER.uid, expediteurNom: COMPTE_NOTIF_CALENDRIER.nom,
+    automatique: true, source: 'calendrier', ref: ref || null
+  };
+  try {
+    if (typeof o.envoyerNotif === 'function') o.envoyerNotif(msg);           // surcharge possible par la page hôte
+    else if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
+    else console.warn('Notification calendrier sans parent, message perdu :', titre);
+  } catch (e) { console.warn('Notification calendrier :', e) }
+}
+
 /* ---------- Export .ics ---------- */
 export function ics(ev) {
   const dt = (k, t) => k.replace(/-/g, '') + 'T' + t.replace(':', '') + '00';
@@ -167,6 +186,48 @@ export function initReunions(o) {
   const peutCreer = () => me().pages?.creerRDV === true;
   const nomDe = u => users().find(x => x.uid === u)?.nom || u;
   const st = { id: null, mand: new Set(), opt: new Set(), dur: 60 };
+
+  /* ----- notifications messagerie (création / modification / suppression) ----- */
+  const lieuTxt = ev => ev.mode === 'distanciel' ? 'En visio' : ((ev.lieu || 'Non précisé') + (ev.mode === 'hybride' ? ' + visio' : ''));
+  const destDe = ev => [...new Set(ev.tous ? users().map(u => u.uid) : (ev.participants || []))].filter(u => u && u !== me().uid);
+  const detailReunion = (ev, uid) => {
+    const L = [`Quand : ${quand(ev)}`, `Horaire : ${ev.start}–${ev.end}`, `Lieu : ${lieuTxt(ev)}`];
+    if (ev.lien) L.push('Visio : ' + ev.lien);
+    L.push('Organisateur : ' + (ev.creeParNom || nomDe(ev.creePar) || '—'));
+    if (!ev.tous) {
+      if ((ev.participantsMandatory || []).includes(uid)) L.push('Participation : obligatoire');
+      else if ((ev.participantsOptional || []).includes(uid)) L.push('Participation : facultative');
+    }
+    if (ev.description) L.push('Ordre du jour : ' + ev.description.slice(0, 200) + (ev.description.length > 200 ? '…' : ''));
+    return L.join('\n');
+  };
+  const changements = (a, b) => {
+    const L = [];
+    if (a.titre !== b.titre) L.push(`Titre : ${a.titre} → ${b.titre}`);
+    if (quand(a) !== quand(b)) L.push(`Date : ${quand(a)} → ${quand(b)}`);
+    if (a.start !== b.start || a.end !== b.end) L.push(`Horaire : ${a.start}–${a.end} → ${b.start}–${b.end}`);
+    if (lieuTxt(a) !== lieuTxt(b)) L.push(`Lieu : ${lieuTxt(a)} → ${lieuTxt(b)}`);
+    if ((a.lien || '') !== (b.lien || '')) L.push('Lien visio modifié');
+    if ((a.description || '') !== (b.description || '')) L.push('Ordre du jour modifié');
+    return L;
+  };
+  function notifierReunion(avantEv, apresEv) {
+    const par = me().nom || '—', ref = { type: 'evenement', id: (apresEv || avantEv)?.id || null };
+    if (!apresEv) {                                   // suppression
+      destDe(avantEv).forEach(u => envoyerNotif(o, u, '🗑️ Réunion annulée : ' + avantEv.titre,
+        `Quand : ${quand(avantEv)}\nHoraire : ${avantEv.start}–${avantEv.end}\nAnnulée par : ${par}`, ref));
+      return;
+    }
+    const apres = new Set(destDe(apresEv)), avant = new Set(avantEv ? destDe(avantEv) : []);
+    const chg = avantEv ? changements(avantEv, apresEv) : [];
+    apres.forEach(u => {
+      if (!avantEv || !avant.has(u)) envoyerNotif(o, u, '📅 Nouvelle réunion : ' + apresEv.titre, detailReunion(apresEv, u), ref);
+      else if (chg.length) envoyerNotif(o, u, '✏️ Réunion modifiée : ' + apresEv.titre,
+        'Modifications :\n• ' + chg.join('\n• ') + '\n\n' + detailReunion(apresEv, u) + '\nModifiée par : ' + par, ref);
+    });
+    avant.forEach(u => { if (!apres.has(u)) envoyerNotif(o, u, '🚫 Retrait de la réunion : ' + avantEv.titre,
+      `Vous n’êtes plus invité(e).\nQuand : ${quand(avantEv)}\nHoraire : ${avantEv.start}–${avantEv.end}\nPar : ${par}`, ref) });
+  }
 
   if (!document.getElementById('rvStyle')) { const s = document.createElement('style'); s.id = 'rvStyle'; s.textContent = CSS; document.head.appendChild(s) }
   const dlg = document.createElement('dialog'); dlg.className = 'rv'; dlg.id = 'rvDlg'; dlg.innerHTML = HTML; document.body.appendChild(dlg);
@@ -387,8 +448,10 @@ export function initReunions(o) {
     };
     const btn = q('#rvSave'); btn.disabled = true;
     try {
+      let evId = st.id;
       if (st.id) await updateDoc(doc(o.db, 'evenements', st.id), { ...payload, modifiePar: me().uid, modifieLe: serverTimestamp() });
-      else await addDoc(collection(o.db, 'evenements'), { ...payload, creeLe: serverTimestamp() });
+      else evId = (await addDoc(collection(o.db, 'evenements'), { ...payload, creeLe: serverTimestamp() })).id;
+      try { notifierReunion(old, { ...payload, id: evId }) } catch (e) { console.warn('Notification calendrier :', e) }
       dlg.close(); notify(st.id ? 'Réunion mise à jour — invités notifiés' : 'Réunion créée — invitations envoyées', 'succes');
       o.onSaved && o.onSaved();
     } catch (err) { console.error(err); notify('Échec de l’enregistrement (droits Firestore ?)', 'erreur') }
@@ -396,7 +459,8 @@ export function initReunions(o) {
   };
   q('#rvDel').onclick = async () => {
     if (!peutCreer() || !st.id || !confirm('Supprimer cette réunion pour tous les invités ?')) return;
-    try { await deleteDoc(doc(o.db, 'evenements', st.id)); dlg.close(); notify('Réunion supprimée', 'succes'); o.onSaved && o.onSaved() }
+    const ancien = evts().find(x => x.id === st.id);
+    try { await deleteDoc(doc(o.db, 'evenements', st.id)); try { ancien && notifierReunion(ancien, null) } catch (e) { console.warn('Notification calendrier :', e) } dlg.close(); notify('Réunion supprimée', 'succes'); o.onSaved && o.onSaved() }
     catch (e) { console.error(e); notify('Échec de la suppression', 'erreur') }
   };
 
