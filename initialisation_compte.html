@@ -936,21 +936,52 @@ input[type=radio],input[type=checkbox]{accent-color:var(--primary);width:18px;he
 
   $("engagement").addEventListener("change", (e) => { etat.engagement = e.target.checked; majBouton(); });
 
-  // Prévient les administrateurs (best-effort : un échec ne bloque pas l'initialisation)
+  // Prévient les administrateurs par deux canaux indépendants :
+//   1) un message dans la messagerie (compte « Système »)
+//   2) une notification push
+  // Un échec ne bloque pas l'initialisation ; le bilan détaille ce qui a (ou n'a pas) marché.
+  // La remarque reste de toute façon enregistrée sur la fiche (remarqueInitialisation),
+  // et apparaît dans admin.html.
   async function signalerAnomalie(texte) {
+    const bilan = { admins: 0, message: false, push: false, erreurs: [] };
+    const nomAff = data.nom || user.email;
+
+    let uids = [];
     try {
       const snap = await getDocs(query(collection(db, "medecins"), where("pages.admin", "==", true)));
-      const uids = snap.docs.map((d) => d.id).filter((id) => id !== user.uid);
-      if (!uids.length) return;
+      uids = snap.docs.map((d) => d.id);   // y compris soi-même si ce compte est administrateur
+    } catch (e) {
+      console.error("Recherche des administrateurs impossible :", e);
+      bilan.erreurs.push("liste des administrateurs : " + (e.code || e.message));
+    }
+    bilan.admins = uids.length;
+    if (!uids.length) {
+      if (!bilan.erreurs.length) bilan.erreurs.push("aucun administrateur trouvé");
+      return bilan;
+    }
+
+    // 1) Message dans la messagerie
+    try {
       const { envoyerMessageSysteme } = await import("./messagerie-envoi.js");
       await envoyerMessageSysteme({
         compteId: "systeme",
-        texte: `Anomalie signalée lors de l'initialisation du compte de ${data.nom || user.email} (${user.email}) :\n\n« ${texte} »\n\nMerci de corriger ces informations depuis la gestion des comptes.`,
+        texte: `Anomalie signalée lors de l'initialisation du compte de ${nomAff} (${user.email}) :\n\n« ${texte} »\n\nMerci de corriger ces informations depuis la gestion des comptes.`,
         destinataires: uids
       });
+      bilan.message = true;
     } catch (e) {
-      console.warn("Signalement aux administrateurs impossible :", e);
+      console.error("Message dans la messagerie impossible :", e);
+      bilan.erreurs.push("messagerie : " + (e.code || e.message));
     }
+
+    // 2) Notification push
+    const extrait = texte.length > 160 ? texte.slice(0, 157) + "…" : texte;
+    const resultats = await Promise.all(uids.map((uid) =>
+      envoyerNotification(uid, "⚠️ Anomalie signalée à l'initialisation d'un compte", `${nomAff} : « ${extrait} »`)));
+    bilan.push = resultats.some((r) => r && r.success === true);
+    if (!bilan.push) bilan.erreurs.push("notification push");
+
+    return bilan;
   }
 
   async function terminer() {
@@ -974,10 +1005,18 @@ input[type=radio],input[type=checkbox]{accent-color:var(--primary);width:18px;he
       return;
     }
 
-    if (etat.infos === "erreur") await signalerAnomalie(etat.remarque.trim());
+    const bilan = etat.infos === "erreur" ? await signalerAnomalie(etat.remarque.trim()) : null;
 
-    afficherMessage("Votre compte est prêt ! Redirection en cours…", true);
-    setTimeout(() => { location.href = destinationFinale(user.uid); }, 1200);
+    if (!bilan || bilan.message || bilan.push) {
+      afficherMessage("Votre compte est prêt ! Redirection en cours…", true);
+      setTimeout(() => { location.href = destinationFinale(user.uid); }, 1200);
+    } else {
+      // Remarque enregistrée sur la fiche, mais personne n'a pu être prévenu automatiquement :
+      // on laisse le temps de lire le détail avant de rediriger.
+      afficherMessage("Votre compte est prêt. Votre remarque est enregistrée, mais l'administration n'a pas pu être prévenue automatiquement ("
+        + bilan.erreurs.join(" ; ") + "). Pensez à la contacter directement. Redirection dans quelques secondes…", false);
+      setTimeout(() => { location.href = destinationFinale(user.uid); }, 8000);
+    }
   }
 
   /* ============================================================
