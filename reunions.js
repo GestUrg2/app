@@ -392,13 +392,30 @@ export function initReunions(o) {
     ? 'En visio'
     : ((ev.lieu || 'Non précisé') + (ev.mode === 'hybride' ? ' + visio' : ''));
 
-  const destDe = ev => [
-    ...new Set(
-      ev.tous
-        ? users().map(u => u.uid)
-        : (ev.participants || [])
-    )
-  ].filter(u => u && u !== me().uid);
+
+const destDe = ev => {
+  if (!ev) return [];
+
+  // Toute l'équipe : récupérer tous les utilisateurs
+  if (ev.tous === true) {
+    return [...new Set(
+      users()
+        .map(u => u.uid)
+        .filter(Boolean)
+    )].filter(u => u !== me().uid);
+  }
+
+  // Réunion ciblée : fusionner les trois listes
+  const liste = [
+    ...(ev.participants || []),
+    ...(ev.participantsMandatory || []),
+    ...(ev.participantsOptional || [])
+  ];
+
+  return [...new Set(liste)]
+    .filter(uid => uid && uid !== me().uid);
+};
+
 
   const detailReunion = (ev, uid) => {
     const L = [
@@ -1224,242 +1241,294 @@ export function initReunions(o) {
 
   /* ----- enregistrement ----- */
 
-  q('#rvSave').onclick = async () => {
-    if (!peutCreer()) {
-      return notify('Droit « creerRDV » requis.', 'avertissement');
-    }
+ q('#rvSave').onclick = async () => {
+  if (!peutCreer()) {
+    return notify('Droit « creerRDV » requis.', 'avertissement');
+  }
 
-    const c = cfg();
-    const titre = q('#rvTitre').value.trim();
-    const mode = q('#rvMode').value;
+  const c = cfg();
+  const titre = q('#rvTitre').value.trim();
+  const mode = q('#rvMode').value;
 
-    if (!titre) {
-      return notify('Saisissez un titre', 'avertissement');
-    }
+  if (!titre) {
+    return notify('Saisissez un titre', 'avertissement');
+  }
 
-    if (!c.d1) {
-      return notify('Choisissez une date', 'avertissement');
-    }
+  if (!c.d1) {
+    return notify('Choisissez une date', 'avertissement');
+  }
 
-    if (!(c.e > c.s)) {
-      return notify(
-        'Horaires invalides (la fin doit suivre le début)',
-        'avertissement'
-      );
-    }
-
-    if (c.rep === 'range' && (!c.d2 || c.d2 < c.d1)) {
-      return notify('Dates invalides', 'avertissement');
-    }
-
-    if (c.rep === 'weekly' && !c.jours.length) {
-      return notify(
-        'Choisissez au moins un jour de la semaine',
-        'avertissement'
-      );
-    }
-
-    if (c.rep === 'weekly' && c.d2 && c.d2 < c.d1) {
-      return notify('Dates invalides', 'avertissement');
-    }
-
-    if (
-      mode !== 'presentiel'
-      && q('#rvLien').value.trim()
-      && !/^https?:\/\//i.test(q('#rvLien').value.trim())
-    ) {
-      return notify(
-        'Le lien visio doit commencer par http(s)://',
-        'avertissement'
-      );
-    }
-
-    const dates = datesDe(c);
-
-    const cibles = c.tous
-      ? users().map(u => u.uid)
-      : [...st.mand];
-
-    const indispo = cibles.filter(u =>
-      dates.slice(0, 30).some(k =>
-        occupations(u, k, st.id).some(x =>
-          x.hard && x.s < c.e && c.s < x.e
-        )
-      )
+  if (!(c.e > c.s)) {
+    return notify(
+      'Horaires invalides (la fin doit suivre le début)',
+      'avertissement'
     );
+  }
 
-    if (
-      indispo.length
-      && !confirm(
-        `${indispo.length} participant(s) obligatoire(s) indisponible(s) sur ce créneau :\n`
-        + '• ' + indispo.slice(0, 8).map(nomDe).join('\n• ')
-        + (indispo.length > 8 ? '\n• …' : '')
-        + '\n\nEnvoyer quand même ?'
+  if (c.rep === 'range' && (!c.d2 || c.d2 < c.d1)) {
+    return notify('Dates invalides', 'avertissement');
+  }
+
+  if (c.rep === 'weekly' && !c.jours.length) {
+    return notify(
+      'Choisissez au moins un jour de la semaine',
+      'avertissement'
+    );
+  }
+
+  if (c.rep === 'weekly' && c.d2 && c.d2 < c.d1) {
+    return notify('Dates invalides', 'avertissement');
+  }
+
+  const lien = q('#rvLien').value.trim();
+
+  if (
+    mode !== 'presentiel'
+    && lien
+    && !/^https?:\/\//i.test(lien)
+  ) {
+    return notify(
+      'Le lien visio doit commencer par http(s)://',
+      'avertissement'
+    );
+  }
+
+  const dates = datesDe(c);
+
+  // Participants concernés par les vérifications de disponibilité.
+  const cibles = c.tous
+    ? users().map(u => u.uid).filter(Boolean)
+    : [...new Set(st.mand)];
+
+  const indispo = cibles.filter(uid =>
+    dates.slice(0, 30).some(k =>
+      occupations(uid, k, st.id).some(x =>
+        x.hard && x.s < c.e && c.s < x.e
       )
-    ) {
-      return;
-    }
+    )
+  );
 
-    const sl = dates.slice(0, 30)
-      .map(k => salleConflit(k, c.s, c.e))
-      .find(Boolean);
+  if (
+    indispo.length
+    && !confirm(
+      `${indispo.length} participant(s) obligatoire(s) indisponible(s) sur ce créneau :\n`
+      + '• ' + indispo.slice(0, 8).map(nomDe).join('\n• ')
+      + (indispo.length > 8 ? '\n• …' : '')
+      + '\n\nEnvoyer quand même ?'
+    )
+  ) {
+    return;
+  }
 
-    if (
-      sl
-      && !confirm(
-        `La salle « ${sl.lieu} » est déjà réservée (« ${sl.titre} » ${sl.start}–${sl.end}). Continuer ?`
-      )
-    ) {
-      return;
-    }
+  const sl = dates.slice(0, 30)
+    .map(k => salleConflit(k, c.s, c.e))
+    .find(Boolean);
 
-    const old = st.id
-      ? evts().find(x => x.id === st.id)
-      : null;
+  if (
+    sl
+    && !confirm(
+      `La salle « ${sl.lieu} » est déjà réservée (« ${sl.titre} » ${sl.start}–${sl.end}). Continuer ?`
+    )
+  ) {
+    return;
+  }
 
-    const mand = [...st.mand];
-    const opt = [...st.opt];
+  const old = st.id
+    ? evts().find(x => x.id === st.id)
+    : null;
 
-    const weekly = c.rep === 'weekly';
-    const range = c.rep === 'range';
+  const mand = [...new Set(st.mand)].filter(Boolean);
+  const opt = [...new Set(st.opt)].filter(Boolean);
 
-    const sig = [
-      c.rep,
-      c.d1,
-      c.d2,
-      c.s,
-      c.e,
-      c.jours.join()
-    ].join('|');
+  const weekly = c.rep === 'weekly';
+  const range = c.rep === 'range';
 
-    const oldSig = old
-      ? [
-          old.jours
-            ? 'weekly'
-            : (old.dateFin && old.dateFin !== old.date ? 'range' : 'once'),
-          old.date || old.depuis,
-          old.dateFin || old.jusqu || '',
-          tm(old.start),
-          tm(old.end),
-          (old.jours || []).join()
-        ].join('|')
-      : '';
+  const sig = [
+    c.rep,
+    c.d1,
+    c.d2,
+    c.s,
+    c.e,
+    c.jours.join()
+  ].join('|');
 
-    const responses = old && sig === oldSig
-      ? { ...(old.responses || {}) }
-      : {};
+  const oldSig = old
+    ? [
+        old.jours
+          ? 'weekly'
+          : (old.dateFin && old.dateFin !== old.date ? 'range' : 'once'),
+        old.date || old.depuis,
+        old.dateFin || old.jusqu || '',
+        tm(old.start),
+        tm(old.end),
+        (old.jours || []).join()
+      ].join('|')
+    : '';
 
-    responses[me().uid] = 'oui';
+  const responses = old && sig === oldSig
+    ? { ...(old.responses || {}) }
+    : {};
 
-    const payload = {
-      cat: q('#rvCat').value,
-      titre,
-      mode,
+  responses[me().uid] = 'oui';
 
-      date: weekly ? null : c.d1,
-      dateFin: range ? c.d2 : null,
+  const payload = {
+    cat: q('#rvCat').value,
+    titre,
+    mode,
 
-      jours: weekly ? c.jours : null,
-      depuis: weekly ? c.d1 : null,
-      jusqu: weekly ? (c.d2 || null) : null,
+    date: weekly ? null : c.d1,
+    dateFin: range ? c.d2 : null,
 
-      start: q('#rvS').value,
-      end: q('#rvE').value,
+    jours: weekly ? c.jours : null,
+    depuis: weekly ? c.d1 : null,
+    jusqu: weekly ? (c.d2 || null) : null,
 
-      lieu: mode === 'distanciel'
-        ? ''
-        : q('#rvLieu').value.trim(),
+    start: q('#rvS').value,
+    end: q('#rvE').value,
 
-      lien: mode === 'presentiel'
-        ? ''
-        : q('#rvLien').value.trim(),
+    lieu: mode === 'distanciel'
+      ? ''
+      : q('#rvLieu').value.trim(),
 
-      description: q('#rvDesc').value.trim(),
-      rappel: +q('#rvRap').value || 0,
+    lien: mode === 'presentiel'
+      ? ''
+      : lien,
 
-      tous: c.tous,
+    description: q('#rvDesc').value.trim(),
+    rappel: +q('#rvRap').value || 0,
 
-      participantsMandatory: mand,
-      participantsOptional: opt,
+    tous: c.tous,
 
-      participants: [
-        ...new Set([...mand, ...opt, me().uid])
-      ],
+    participantsMandatory: mand,
+    participantsOptional: opt,
 
-      optInvite: q('#rvInv').checked,
-      optMaskList: q('#rvMask').checked,
-      optResponse: q('#rvResp').checked,
+    participants: [
+      ...new Set([
+        ...mand,
+        ...opt,
+        me().uid
+      ])
+    ],
 
-      responses,
+    optInvite: q('#rvInv').checked,
+    optMaskList: q('#rvMask').checked,
+    optResponse: q('#rvResp').checked,
 
-      creePar: old?.creePar || me().uid,
-      creeParNom: old?.creeParNom || me().nom || ''
-    };
+    responses,
 
-    const btn = q('#rvSave');
-    btn.disabled = true;
-
-    try {
-      let evId = st.id;
-
-      if (st.id) {
-        await updateDoc(
-          doc(o.db, 'evenements', st.id),
-          {
-            ...payload,
-            modifiePar: me().uid,
-            modifieLe: serverTimestamp()
-          }
-        );
-      } else {
-        evId = (
-          await addDoc(
-            collection(o.db, 'evenements'),
-            {
-              ...payload,
-              creeLe: serverTimestamp()
-            }
-          )
-        ).id;
-      }
-
-      // IMPORTANT :
-      // On attend la fin de toutes les notifications avant d'afficher
-      // le résultat à l'utilisateur.
-      const resultatNotif = await notifierReunion(
-        old,
-        { ...payload, id: evId }
-      );
-
-      dlg.close();
-
-      if (resultatNotif.echecs) {
-        notify(
-          `Réunion enregistrée. ${resultatNotif.envoyees} notification(s) envoyée(s), ${resultatNotif.echecs} échec(s). Consultez la console pour le détail.`,
-          'avertissement'
-        );
-      } else {
-        notify(
-          st.id
-            ? `Réunion mise à jour — ${resultatNotif.envoyees} notification(s) envoyée(s)`
-            : `Réunion créée — ${resultatNotif.envoyees} invitation(s) envoyée(s)`,
-          'succes'
-        );
-      }
-
-      if (o.onSaved) o.onSaved();
-
-    } catch (err) {
-      console.error(err);
-      notify(
-        'Échec de l’enregistrement (droits Firestore ?)',
-        'erreur'
-      );
-    }
-
-    btn.disabled = false;
+    creePar: old?.creePar || me().uid,
+    creeParNom: old?.creeParNom || me().nom || ''
   };
 
+  const btn = q('#rvSave');
+  btn.disabled = true;
+
+  try {
+    let evId = st.id;
+
+    // Enregistrement de la réunion.
+    if (st.id) {
+      await updateDoc(
+        doc(o.db, 'evenements', st.id),
+        {
+          ...payload,
+          modifiePar: me().uid,
+          modifieLe: serverTimestamp()
+        }
+      );
+    } else {
+      const nouveau = await addDoc(
+        collection(o.db, 'evenements'),
+        {
+          ...payload,
+          creeLe: serverTimestamp()
+        }
+      );
+
+      evId = nouveau.id;
+    }
+
+    // Calcul explicite des destinataires.
+    const reunionEnregistree = {
+      ...payload,
+      id: evId
+    };
+
+    let destinataires = [];
+
+    if (reunionEnregistree.tous === true) {
+      destinataires = users()
+        .map(u => u.uid)
+        .filter(Boolean);
+    } else {
+      destinataires = [
+        ...(reunionEnregistree.participants || []),
+        ...(reunionEnregistree.participantsMandatory || []),
+        ...(reunionEnregistree.participantsOptional || [])
+      ];
+    }
+
+    // Élimination des doublons et de l'organisateur.
+    destinataires = [
+      ...new Set(destinataires)
+    ].filter(uid =>
+      uid && uid !== me().uid
+    );
+
+    console.log('📅 Réunion enregistrée :', titre);
+    console.log('👤 Organisateur :', me().uid);
+    console.log('👥 Participants obligatoires :', mand);
+    console.log('👥 Participants facultatifs :', opt);
+    console.log('👥 Toute l’équipe :', c.tous);
+    console.log('📨 Destinataires calculés :', destinataires);
+
+    // Envoi des notifications.
+    // notifierReunion compare les anciens et nouveaux participants
+    // pour éviter de renvoyer inutilement les invitations.
+    const resultatNotif = await notifierReunion(
+      old,
+      reunionEnregistree
+    );
+
+    console.log('📬 Résultat des notifications :', resultatNotif);
+
+    dlg.close();
+
+    if (resultatNotif.echecs) {
+      notify(
+        `Réunion enregistrée. ${resultatNotif.envoyees} notification(s) envoyée(s), ${resultatNotif.echecs} échec(s). Consultez la console pour le détail.`,
+        'avertissement'
+      );
+    } else if (resultatNotif.envoyees === 0) {
+      notify(
+        'Réunion enregistrée, mais aucune nouvelle notification à envoyer. Vérifiez les participants ou si les invitations ont déjà été envoyées.',
+        'avertissement'
+      );
+    } else {
+      notify(
+        st.id
+          ? `Réunion mise à jour — ${resultatNotif.envoyees} notification(s) envoyée(s)`
+          : `Réunion créée — ${resultatNotif.envoyees} invitation(s) envoyée(s)`,
+        'succes'
+      );
+    }
+
+    if (o.onSaved) {
+      o.onSaved();
+    }
+
+  } catch (err) {
+    console.error('Erreur enregistrement réunion :', err);
+
+    notify(
+      'Échec de l’enregistrement (droits Firestore ?)',
+      'erreur'
+    );
+
+  } finally {
+    btn.disabled = false;
+  }
+};
   /* ----- suppression ----- */
 
   q('#rvDel').onclick = async () => {
