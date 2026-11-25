@@ -45,6 +45,19 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 .col.today{background-color:#f8fbfe}
 .ev{position:absolute;display:block;overflow:hidden;padding:2px 6px;text-align:left;font-size:12px;line-height:1.3;color:var(--ink);white-space:nowrap;text-overflow:ellipsis;background:var(--bg);border:0;border-left:5px solid var(--c);border-radius:6px;cursor:pointer;z-index:2}
 .ev:hover{filter:brightness(.96)}.ev b{color:var(--c)}.ev small{color:var(--muted)}
+.ev{touch-action:manipulation;user-select:none}h3{margin:16px 0 0;font-size:15px}
+.ev.s-attente{box-shadow:0 0 0 2px var(--c) inset;font-weight:600}
+.ev.s-encours{background:var(--c);color:#fff}.ev.s-encours b,.ev.s-encours small{color:#fff}
+.ev.s-annule{background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 5px,#fff 5px,#fff 10px);color:var(--muted);border-left:5px dashed var(--c);opacity:.8;z-index:0}
+.ev.s-annule .nm{text-decoration:line-through}.ev.s-annule::after{content:"ⓘ";position:absolute;right:5px;top:2px;color:var(--c);font-weight:700}
+.ev[aria-current=true]{outline:3px solid var(--ink);z-index:3}
+.raison{margin-top:12px;padding:12px;border-radius:12px;background:var(--late-soft);border:1px dashed var(--late);color:var(--late);font-weight:600}
+.raison small{display:block;font-weight:500;color:var(--muted);margin-top:4px}
+.note{margin-top:14px;padding:12px;border-radius:12px;background:var(--bg);color:var(--c);font-weight:600}
+.choice{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer;text-align:left}.choice input{margin-top:4px;width:auto;min-height:0}.choice.on{border-color:var(--primary);background:var(--primary-soft)}
+.btn-primary:disabled{opacity:.45}.btn-danger:hover{background:var(--late-soft)}
+.now{position:absolute;left:0;right:0;height:2px;background:#e0334a;z-index:2;pointer-events:none}
+.now::before{content:"";position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:#e0334a}
 .aff{position:absolute;left:0;right:0;z-index:0;pointer-events:none;overflow:hidden;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);background:rgba(88,106,126,.09);border-left:4px solid #9aa9b8}
 .aff.cs{color:#16784a;background:rgba(22,120,74,.10);border-left-color:#16784a}
 .ev-srv{position:absolute;left:2px;right:2px;z-index:1;overflow:hidden;padding:3px 7px;text-align:left;font-size:12px;line-height:1.3;font-weight:600;color:#4c1d95;background:#ece5fb;border:0;border-left:5px solid #6b3fc4;border-radius:6px;cursor:pointer;white-space:nowrap;text-overflow:ellipsis}
@@ -127,7 +140,7 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--primary);bo
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initReunions, quand, premiereDate, resumeRSVP, ics, applique as appliqueEv, CATS as CATS_EV, MODES as MODES_EV } from "./reunions.js";
-import { getFirestore, doc, getDoc, getDocs, updateDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, limit, onSnapshot, runTransaction, serverTimestamp, Timestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app);
 const $=s=>document.querySelector(s);
@@ -192,7 +205,7 @@ function ecouter(){
   $('#jour').value=iso(anchor);$('#v-day').classList.toggle('on',view==='day');$('#v-week').classList.toggle('on',view==='week');
   unsub=onSnapshot(query(collection(db,'rdv-urgences'),where('date','>=',iso(a)),where('date','<=',iso(b))),s=>{
     rdvs=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.medecinId||r.medecinId===medecin.uid).sort((x,y)=>x.heure.localeCompare(y.heure));
-    rendre();
+    rendre();if(sel&&!$('#detail').contains(document.activeElement))ouvrir();
   },e=>console.error(e));
 }
 
@@ -211,6 +224,15 @@ function ecouterAffectations(){
     rendre();
   },e=>console.error(e));
 }
+
+const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
+const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
+function majEtat(){
+  const n=new Date(),k=iso(n),m=n.getHours()*60+n.getMinutes(),a=affs.filter(x=>applique(x,k)&&tm(x.start)<=m&&m<tm(x.end)),c=a.find(x=>x.consultation),e=$('#etat');
+  e.textContent=c?'En consultation · rendez-vous ouverts':a.length?(a[0].posteLabel||a[0].poste):'Aucune affectation en ce moment';
+  e.className='etat '+(c?'cs':a.length?'oth':'');
+}
+setInterval(majEtat,60000);
 
 function rendre(){
   const[a,b]=plage(),days=[],today=iso(new Date());
@@ -236,39 +258,100 @@ function rendre(){
     }).join('');
     for(const hr in grp)grp[hr].forEach((r,i,arr)=>{
       const p=r.patient||{},top=(tm(hr)-h0*60)/60*PX;
-      h+=`<button class="ev s-${r.statut}" data-id="${r.id}" style="top:${top}px;height:${Math.max(26,PX*(r.duree||DUR)/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${esc(p.prenom)} ${esc(p.nom)}</button>`;
+      h+=`<button class="ev s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''} title="${esc(hr+' · '+STAT[r.statut]+' · '+(p.prenom||'')+' '+(p.nom||'')+' · '+(r.motif||'')+' · '+symsDe(r).join(', ')+(r.statut==='annule'?' · Annulation : '+(r.motifAnnulation||'motif non renseigné'):''))}" style="top:${top}px;height:${Math.max(26,PX*(r.duree||DUR)/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${r.statut==='annule'?'✕ ':''}${r.alerteVitale?'⚠ ':''}${demandeurDe(r)?'👤 ':''}<span class="nm">${esc(p.prenom)} ${esc(p.nom)}</span>${view==='day'?` <small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}</small>`:''}</button>`;
     });
+    if(k===today&&nm>=h0*60&&nm<h1*60)h+=`<div class="now" style="top:${(nm-h0*60)/60*PX}px"></div>`;
     h+='</div>';
   }
-  cal.innerHTML=h;
+  cal.innerHTML=h;majEtat();
   if(go){go=false;$('#wrap').scrollTop=Math.max(0,(days.some(d=>iso(d)===today)?nm-60:480)/60*PX)}
 }
 
 $('#cal').onclick=e=>{
   const srv=e.target.closest('.ev-srv');
-  if(srv){ouvrirEvenement(srv.dataset.evid);return}
-  const ev=e.target.closest('.ev');
-  if(ev){sel=ev.dataset.id;ouvrirRdv(sel)}
+  if(srv){sel=null;ouvrirEvenement(srv.dataset.evid);return}
+  const b=e.target.closest('.ev');if(!b)return;
+  sel=b.dataset.id;
+  document.querySelectorAll('.ev').forEach(x=>x.setAttribute('aria-current',x===b));
+  ouvrir();
 };
 
-function ouvrirRdv(id){
-  const r=rdvs.find(x=>x.id===id),box=$('#detail');
-  if(!r){box.hidden=true;return}
-  const p=r.patient||{};
-  const F=(l,v)=>v?`<div class="fact"><label>${l}</label><span>${esc(v)}</span></div>`:'';
-  const hh=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-  const fin=hh(tm(r.heure)+(r.duree||DUR));
-  const dateTxt=new Date(r.date+'T00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const nom=((p.prenom||'')+' '+(p.nom||'')).trim()||'Patient';
-  box.innerHTML=`<div class="dh"><h2 class="card-title">${esc(nom)}</h2><button class="x" id="closeRdv" aria-label="Fermer">×</button></div>`
-    +`<span class="pill s-${esc(r.statut)}">${esc(STAT[r.statut]||r.statut||'')}</span>`
-    +F('Date',dateTxt)+F('Horaire',`${r.heure} – ${fin}`)
-    +F('Motif',r.motif||r.raison)+F('Téléphone',p.tel||p.telephone)
-    +F('Date de naissance',p.dateNaissance||p.naissance)+F('Notes',r.notes||r.note||r.commentaire);
-  box.hidden=false;
-  $('#closeRdv').onclick=()=>{box.hidden=true};
+/* ---- Fiche patient (même index que ajouterpatient.html) ---- */
+function buildSearchIndex(nom,prenom,dn){
+  const n=(nom||'').toLowerCase(),p=(prenom||'').toLowerCase(),idx=new Set();
+  for(const w of [n,p])for(let i=1;i<=w.length;i++)idx.add(w.slice(0,i));
+  idx.add(n+' '+p);idx.add(p+' '+n);
+  const d=new Date(dn);
+  if(dn&&!isNaN(d)){const j=String(d.getDate()).padStart(2,'0'),m=String(d.getMonth()+1).padStart(2,'0'),a=d.getFullYear();idx.add(`${j}${m}${a}`);idx.add(`${j}/${m}/${a}`);idx.add(String(a))}
+  return [...idx];
+}
+async function candidats(p){
+  const out=new Map(),d=new Date(p.dateNaissance),n=(p.nom||'').toLowerCase(),pr=(p.prenom||'').toLowerCase(),keys=[n+' '+pr,pr+' '+n];
+  if(!isNaN(d))keys.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`);
+  for(const k of keys){try{(await getDocs(query(collection(db,'patients'),where('searchIndex','array-contains',k),limit(10)))).forEach(x=>out.set(x.id,{id:x.id,...x.data()}))}catch(e){}}
+  return [...out.values()].sort((a,b)=>((b.dateNaissance===p.dateNaissance)-(a.dateNaissance===p.dateNaissance)));
 }
 
+/* ---- Consultation ---- */
+const openConsult=(id,p)=>window.parent.postMessage({type:'OPEN_TAB',title:('Consultation '+(p.nom||'')+' '+(p.prenom||'')).trim(),url:'ficheconsultation.html?id='+encodeURIComponent(id)},'*');
+async function creerConsultation(r,pid){
+  const n=new Date();
+  const ref=await addDoc(collection(db,'consultations'),{patientId:pid,rdvId:r.id,date:n.toLocaleDateString('fr-FR'),heure:n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),dateTS:Timestamp.now(),
+    motif:r.motif,histoire:[r.detail,symsDe(r).length?'Symptômes déclarés : '+symsDe(r).join(', '):'',r.symptomes?.depuis?'Depuis : '+r.symptomes.depuis:''].filter(Boolean).join('\n'),symptomes:r.symptomes||{},pourQui:r.pourQui||'moi',demandeur:r.demandeur||null,examenClinique:'',diagnostic:'',conduite:'',statut:'encours',
+    medecinId:medecin.uid,medecinNom:medecin.nom||'',medecinSpecialite:medecin.specialite||'',origine:'rdv-urgences'});
+  await updateDoc(doc(db,'patients',pid),{consultations:arrayUnion(ref.id)});
+  await updateDoc(doc(db,'rdv-urgences',r.id),{patientId:pid,consultationId:ref.id,statut:'encours',medecinId:medecin.uid});
+  return ref.id;
+}
+
+/* ---- Dossier du rendez-vous (clic sur un créneau) ---- */
+async function ouvrir(){
+  const r=rdvs.find(x=>x.id===sel),box=$('#detail');
+  if(!r){box.hidden=true;return}
+  const p=r.patient||{},sy=r.symptomes||{},arr=r.arriveLe?.toDate?r.arriveLe.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+  const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</span></div>`;
+  let h=`<div class="dh"><h2 class="card-title">${esc(p.prenom)} ${esc(p.nom)}</h2><button class="x" id="close" aria-label="Fermer">×</button></div><span class="pill s-${r.statut}">${STAT[r.statut]}</span>`+
+    F('Créneau',new Date(r.date+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+' à '+r.heure+(r.ref?' · '+r.ref:''))+(r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':'')+F('Motif',r.motif+(r.detail?' — '+r.detail:''))+F('Symptômes',(sy.liste||[]).join(', '))+F('Symptômes ajoutés par le patient',(sy.autres||[]).join(', '))+F('Depuis',sy.depuis)+F('Douleur',sy.douleur?sy.douleur+'/10':'')+F('Fièvre',sy.fievre)+F('Signes d’alerte',(sy.signesAlerte||[]).join(', '))+(demandeurDe(r)?F('Rendez-vous pris par un tiers',demandeurDe(r))+F('Téléphone du demandeur',r.demandeur?.telephone):'')+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('E-mail',p.email);
+  if(r.statut==='annule'){
+    const qui={patient:'par le patient (en ligne)',accueil:'par l’accueil',medecin:'par le service'}[r.annulePar]||'';
+    const quand=r.annuleLe?.toDate?r.annuleLe.toDate().toLocaleString('fr-FR',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'';
+    h+=`<div class="raison">Rendez-vous annulé${qui?' '+qui:''}<br>Motif : ${esc(r.motifAnnulation||'non renseigné')}${r.precisionAnnulation?`<small>Précisions : ${esc(r.precisionAnnulation)}</small>`:''}${quand?`<small>Annulé le ${esc(quand)}</small>`:''}</div>`;
+  }
+  const actif=r.statut==='pris'||r.statut==='attente';
+  if(r.statut==='pris')h+=`<h3>Fiche patient</h3><div id="fiche"><p class="mut">Recherche des fiches existantes…</p></div>`;
+  else if(r.statut==='attente')h+=`<div class="note s-attente">En salle d’attente${arr?' depuis '+arr:''}.</div><button class="btn-primary" id="go">Démarrer la consultation</button>`;
+  else if(r.consultationId)h+=`<button class="btn-primary" id="open">Ouvrir la consultation</button>`;
+  if(actif)h+=`<button class="btn-danger" id="cancel">Annuler le rendez-vous</button>`;
+  box.hidden=false;box.innerHTML=h;
+  $('#close').onclick=()=>{sel=null;box.hidden=true;document.querySelectorAll('.ev').forEach(x=>x.setAttribute('aria-current','false'))};
+  if($('#open'))$('#open').onclick=()=>openConsult(r.consultationId,p);
+  const demarrer=async()=>{
+    $('#go').disabled=true;
+    try{
+      let pid=r.patientId;const c=$('#fiche input[name=f]:checked');
+      if(c){pid=c.value;if(pid==='new')pid=(await addDoc(collection(db,'patients'),{nom:(p.nom||'').toUpperCase(),prenom:p.prenom,sexe:p.sexe||'',civilite:'',dateNaissance:p.dateNaissance,adresse:p.adresse||'',telephone:p.telephone,email:p.email||'',
+        hospitalisations:[],hospitalisationActiveId:null,hospitalisationActive:false,consultations:[],medtraitant:'',vigilances:'aucune',allergies:'aucun',searchIndex:buildSearchIndex((p.nom||'').toUpperCase(),p.prenom,p.dateNaissance)})).id}
+      openConsult(await creerConsultation(r,pid),p);
+    }catch(e){console.error(e);afficherBulle('Échec de la création de la consultation',BULLE.ERR);$('#go').disabled=false}
+  };
+  if($('#go'))$('#go').onclick=demarrer;
+  if(r.statut==='pris'){
+    const f=$('#fiche'),cands=await candidats(p);
+    if(!f.isConnected)return;
+    f.innerHTML=(cands.length?`<p class="mut">Fiches correspondantes trouvées :</p>`+cands.map((c,i)=>`<label class="choice ${i===0?'on':''}"><input type="radio" name="f" value="${c.id}" ${i===0?'checked':''}><span><b>${esc(c.nom)} ${esc(c.prenom)}</b><br><small class="mut">Né(e) le ${esc(c.dateNaissance||'—')} · ${esc(c.telephone||'—')} · CIP ${esc(c.id)}</small></span></label>`).join(''):'<p class="mut">Aucune fiche existante ne correspond.</p>')+
+      `<label class="choice ${cands.length?'':'on'}"><input type="radio" name="f" value="new" ${cands.length?'':'checked'}><span><b>Créer une nouvelle fiche patient</b></span></label><button class="btn-primary" id="go">Démarrer la consultation</button>`;
+    f.querySelectorAll('input[name=f]').forEach(i=>i.onchange=()=>f.querySelectorAll('.choice').forEach(c=>c.classList.toggle('on',c.querySelector('input').checked)));
+    $('#go').onclick=demarrer;
+  }
+  if($('#cancel'))$('#cancel').onclick=async()=>{
+    if(!confirm('Annuler ce rendez-vous ? Le créneau sera libéré.'))return;
+    try{await runTransaction(db,async tx=>{
+      const oref=doc(db,'rdv-occupation',r.date),o=await tx.get(oref);
+      if(o.exists()){const d=o.data(),c=d.counts||{},md={...(d.med||{})};c[r.heure]=Math.max(0,(c[r.heure]||1)-1);if(r.medecinId)md[r.heure]=(md[r.heure]||[]).filter(u=>u!==r.medecinId);tx.update(oref,{counts:c,med:md})}
+      tx.update(doc(db,'rdv-urgences',r.id),{statut:'annule',annuleLe:serverTimestamp(),annulePar:'medecin',motifAnnulation:'Annulé par le service'});
+    });afficherBulle('Rendez-vous annulé',BULLE.OK)}catch(e){afficherBulle('Échec de l’annulation',BULLE.ERR)}
+  };
+}
 
 function ouvrirEvenement(id){
   const ev=allEvts.find(x=>x.id===id),box=$('#detail');
