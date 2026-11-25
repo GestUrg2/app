@@ -76,6 +76,15 @@ async function finaliserConnexion(user) {
       return;
     }
 
+    // 🧭 Première connexion : assistant d'initialisation du compte.
+    // Il intègre lui-même le changement de mot de passe imposé (doitChangerMDP) :
+    // on le teste donc AVANT le contrôle ci-dessous.
+    if (data.doitInitialiser === true) {
+      const pInit = new URLSearchParams(window.location.search).get("page");
+      window.location.href = "initialisation_compte.html" + (pInit ? "?page=" + encodeURIComponent(pInit) : "");
+      return;
+    }
+
     // 🔐 Vérifie si l'utilisateur doit changer son mot de passe
     if (data.doitChangerMDP === true) {
       window.location.href = "changer_mot_passe.html?from=obligatoire";
